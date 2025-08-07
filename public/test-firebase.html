@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Test - Secure Backend</title>
+</head>
+<body>
+  <h1>Firebase Connection Test</h1>
+  <p><strong>Security Notice:</strong> Firebase operations now handled by secure backend API</p>
+  <button id="testBtn">Test Firebase Connection (via Backend)</button>
+  <div id="result"></div>
+
+  <script>
+    // SECURE: No Firebase config exposed in frontend
+    // All Firebase operations handled by backend server
+    
+    console.log("✅ Secure frontend initialized - no Firebase credentials exposed");
+
+    document.getElementById('testBtn').addEventListener('click', async function() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = 'Testing backend Firebase connection...';
+      
+      try {
+        // Call backend API instead of direct Firebase
+        const response = await fetch('/api/test-firebase', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            test: true,
+            message: 'Firebase connection test via backend'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          resultDiv.innerHTML = `✅ Success! Document ID: ${data.documentId}`;
+          console.log('✅ Test successful via backend:', data);
+        } else {
+          throw new Error(data.error || 'Backend test failed');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `❌ Error: ${error.message}`;
+        console.error('❌ Error: ', error);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Confirmation Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #003349;
+      color: #000;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 40px auto;
+      background-color: white;
+      border-radius: 10px;
+      padding: 30px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    h2 {
+      text-align: center;
+      color: #003349;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    @media screen and (max-width: 600px) {
+      .container {
+        width: 95%;
+        padding: 15px;
+      }
+
+      table, th, td {
+        font-size: 14px;
+      }
+    }
+  </style>
+  
+  <!-- Razorpay Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  
+  <!-- Firebase SDK removed - Backend handles all Firebase operations for security -->
+</head>
+<body>
+  <div class="container">
+    <h2>Registration Confirmation</h2>
+    <table id="dataTable"></table>
+  </div>
+
+  <script>
+    const storedData = localStorage.getItem("submittedData");
+    const table = document.getElementById("dataTable");
+
+    if (storedData) {
+      const data = JSON.parse(storedData);
+      let html = "<tr><th>Field</th><th>Value</th></tr>";
+
+      // Define field labels for better display
+      const fieldLabels = {
+        program: "Program",
+        course: "Course",
+        studentName: "Student Name",
+        email: "Email",
+        phoneNumber: "Phone Number",
+        aadharNumber: "Aadhar Number",
+        permanentAddress: "Permanent Address",
+        correspondenceAddress: "Correspondence Address",
+        sameAddress: "Same as Permanent Address",
+        aadharFile: "Aadhar File",
+        casteFile: "Caste Certificate",
+        residentialFile: "Residential Certificate",
+        incomeFile: "Income Certificate",
+        marksheetFile: "Marksheet/Admit Card",
+        dateOfBirth: "Date of Birth",
+        signatureFile: "Signature File",
+        paymentAmount: "Payment Amount",
+        totalFee: "Total Fee"
+      };
+
+      for (let key in data) {
+        const label = fieldLabels[key] || key;
+        let value = data[key];
+        
+        // Handle file objects
+        if (typeof value === 'object' && value !== null && value.name) {
+          value = `${value.name} (${(value.size / 1024).toFixed(2)} KB, ${value.type})`;
+        }
+        
+        // Handle checkbox values
+        if (key === 'sameAddress') {
+          value = value === 'on' ? 'Yes' : 'No';
+        }
+        
+        html += `<tr><td><strong>${label}</strong></td><td>${value || 'Not provided'}</td></tr>`;
+      }
+
+      table.innerHTML = html;
+    } else {
+      table.innerHTML = "<tr><td colspan='2' style='text-align: center; color: red;'>No data submitted. Please go back and submit the form.</td></tr>";
+    }
+  </script>
+
+  <div style="text-align: center; margin-top: 40px;">
+  <button id="finalSubmitBtn" style="
+    background-color: #007bff;
+    color: white;
+    padding: 12px 30px;
+    font-size: 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  ">
+    Submit & Pay
+  </button>
+</div>
+
+<script>
+  document.getElementById("finalSubmitBtn").addEventListener("click", function () {
+    console.log("Payment button clicked!");
+    
+    const storedData = JSON.parse(localStorage.getItem("submittedData"));
+    const applicationId = localStorage.getItem("applicationId");
+    
+    console.log("Stored data:", storedData);
+    console.log("Application ID:", applicationId);
+    
+    if (!storedData || !applicationId) {
+      alert("No form data found. Please submit the form again.");
+      window.location.href = "index.html";
+      return;
+    }
+    
+    // Check if Razorpay is loaded
+    if (typeof Razorpay === 'undefined') {
+      alert("Razorpay not loaded. Please refresh the page and try again.");
+      return;
+    }
+
+    // Razorpay options
+    const options = {
+      key: "rzp_test_1DP5mmOlF5G5ag", // Test key - replace with your actual key
+      amount: parseFloat(storedData.totalFee) * 100, // Amount in paise
+      currency: "INR",
+      name: "GMCP Admission",
+      description: `Admission Fee - ${storedData.course}`,
+      order_id: "", // Will be generated from backend in production
+      prefill: {
+        name: storedData.studentName,
+        email: storedData.email,
+        contact: storedData.phoneNumber
+      },
+      notes: {
+        application_id: applicationId,
+        course: storedData.course,
+        program: storedData.program
+      },
+      theme: {
+        color: "#003349"
+      },
+      handler: function (response) {
+        // Payment successful
+        console.log("Payment successful:", response);
+        
+        // Store transaction details
+        const paymentData = {
+          ...storedData,
+          transactionId: response.razorpay_payment_id,
+          paymentStatus: "success",
+          paymentTime: new Date().toISOString()
+        };
+        
+        localStorage.setItem("paymentData", JSON.stringify(paymentData));
+        
+        // Update Firebase with payment info
+        updatePaymentStatus(applicationId, response.razorpay_payment_id);
+        
+        // Show success message without alert to avoid blocking
+        console.log(`Payment successful! Transaction ID: ${response.razorpay_payment_id}`);
+        
+        // Redirect to a thank you page immediately
+        window.location.href = "thank-you.html";
+      },
+      modal: {
+        ondismiss: function() {
+          alert("Payment cancelled. You can retry payment anytime.");
+        }
+      }
+    };
+    
+    const rzp = new Razorpay(options);
+    rzp.open();
+  });
+  
+  // Function to update payment status via server API
+  async function updatePaymentStatus(docId, transactionId) {
+    try {
+      const response = await fetch(`/api/registrations/${docId}/payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          transactionId: transactionId,
+          paymentStatus: 'success',
+          paymentTime: new Date().toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log(`✅ Payment status updated for ${docId} with transaction ${transactionId}`);
+      return result;
+    } catch (error) {
+      console.error("❌ Error updating payment status:", error);
+      // No fallback to direct Firebase - all operations must go through secure backend
+      throw error;
+    }
+  }
+  
+  // Function to generate receipt
+  function generateReceipt(data, transactionId) {
+    const receiptWindow = window.open('', '_blank', 'width=600,height=800');
+    
+    receiptWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #003349; padding-bottom: 20px; margin-bottom: 20px; }
+          .receipt-details { margin: 20px 0; }
+          .detail-row { display: flex; justify-content: space-between; margin: 10px 0; }
+          .success { color: #28a745; font-weight: bold; }
+          @media print { button { display: none; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>GMCP Admission Receipt</h1>
+          <p>Ganga Memorial College of Polytechnic</p>
+          <p>Harnaout, Nalanda</p>
+        </div>
+        
+        <div class="receipt-details">
+          <div class="detail-row">
+            <span><strong>Transaction ID:</strong></span>
+            <span>${transactionId}</span>
+          </div>
+          <div class="detail-row">
+            <span><strong>Student Name:</strong></span>
+            <span>${data.studentName}</span>
+          </div>
+          <div class="detail-row">
+            <span><strong>Course:</strong></span>
+            <span>${data.course}</span>
+          </div>
+          <div class="detail-row">
+            <span><strong>Amount Paid:</strong></span>
+            <span>₹${data.totalFee}</span>
+          </div>
+          <div class="detail-row">
+            <span><strong>Payment Time:</strong></span>
+            <span>${new Date().toLocaleString()}</span>
+          </div>
+          <div class="detail-row success">
+            <span><strong>Status:</strong></span>
+            <span>PAID</span>
+          </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+          <button onclick="window.print()">Print Receipt</button>
+          <button onclick="window.close()">Close</button>
+        </div>
+      </body>
+      </html>
+    `);
+    
+    receiptWindow.document.close();
+  }
+</script>
+
+</body>
+</html>

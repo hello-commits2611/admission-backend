@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin View Diagnostic</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+    button { padding: 10px 15px; margin: 5px; background: #003349; color: white; border: none; border-radius: 3px; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Admin View Diagnostic Tool</h1>
+  
+  <div class="test-section">
+    <h3>1. Authentication Test</h3>
+    <button onclick="testAuth()">Test Authentication</button>
+    <div id="auth-result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>2. API Endpoint Test</h3>
+    <button onclick="testAPI()">Test /api/registrations</button>
+    <div id="api-result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>3. Firebase Connection Test</h3>
+    <button onclick="testFirebase()">Test Firebase</button>
+    <div id="firebase-result"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>4. Server Status</h3>
+    <button onclick="testServer()">Test Server</button>
+    <div id="server-result"></div>
+  </div>
+
+  <script>
+    async function testAuth() {
+      const resultDiv = document.getElementById('auth-result');
+      resultDiv.innerHTML = '<p class="info">Testing authentication...</p>';
+      
+      try {
+        const response = await fetch('/admin/check-auth');
+        if (response.ok) {
+          const data = await response.json();
+          resultDiv.innerHTML = `<p class="success">✅ Authentication OK: ${JSON.stringify(data)}</p>`;
+        } else {
+          resultDiv.innerHTML = `<p class="error">❌ Authentication failed: ${response.status} ${response.statusText}</p>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Auth test error: ${error.message}</p>`;
+      }
+    }
+    
+    async function testAPI() {
+      const resultDiv = document.getElementById('api-result');
+      resultDiv.innerHTML = '<p class="info">Testing API endpoint...</p>';
+      
+      try {
+        const response = await fetch('/api/registrations');
+        if (response.ok) {
+          const data = await response.json();
+          resultDiv.innerHTML = `
+            <p class="success">✅ API endpoint working</p>
+            <p>Response type: ${Array.isArray(data) ? 'Array' : 'Object'}</p>
+            <p>Records count: ${data.registrations ? data.registrations.length : (Array.isArray(data) ? data.length : 'Unknown')}</p>
+            <pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>
+          `;
+        } else {
+          resultDiv.innerHTML = `<p class="error">❌ API failed: ${response.status} ${response.statusText}</p>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ API test error: ${error.message}</p>`;
+      }
+    }
+    
+    async function testFirebase() {
+      const resultDiv = document.getElementById('firebase-result');
+      resultDiv.innerHTML = '<p class="info">Testing Firebase connection...</p>';
+      
+      try {
+        // Test if Firebase is loaded
+        if (typeof firebase !== 'undefined') {
+          resultDiv.innerHTML = '<p class="success">✅ Firebase SDK loaded</p>';
+        } else {
+          resultDiv.innerHTML = '<p class="error">❌ Firebase SDK not loaded</p>';
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Firebase test error: ${error.message}</p>`;
+      }
+    }
+    
+    async function testServer() {
+      const resultDiv = document.getElementById('server-result');
+      resultDiv.innerHTML = '<p class="info">Testing server status...</p>';
+      
+      try {
+        const response = await fetch('/');
+        if (response.ok) {
+          resultDiv.innerHTML = '<p class="success">✅ Server is running and responding</p>';
+        } else {
+          resultDiv.innerHTML = `<p class="error">❌ Server error: ${response.status}</p>`;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<p class="error">❌ Server test error: ${error.message}</p>`;
+      }
+    }
+    
+    // Auto-run tests when page loads
+    window.addEventListener('load', function() {
+      console.log('🔧 Running diagnostic tests...');
+      testServer();
+      setTimeout(testAuth, 1000);
+      setTimeout(testAPI, 2000);
+      setTimeout(testFirebase, 3000);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - GMCP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #003349;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 400px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #003349;
+      margin-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #003349;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .login-btn:hover {
+      background-color: #004a5c;
+    }
+    .login-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .error-message {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+    }
+    .success-message {
+      color: green;
+      text-align: center;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="header">
+      <h1>Admin Login</h1>
+      <p>GMCP Admission System</p>
+    </div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required>
+      </div>
+      
+      <button type="submit" class="login-btn" id="loginBtn">Login</button>
+      
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const loginBtn = document.getElementById('loginBtn');
+      const errorMessage = document.getElementById('errorMessage');
+      const successMessage = document.getElementById('successMessage');
+      
+      // Reset messages
+      errorMessage.style.display = 'none';
+      successMessage.style.display = 'none';
+      
+      // Show loading state
+      loginBtn.textContent = 'Logging in...';
+      loginBtn.disabled = true;
+      
+      try {
+        const response = await fetch('/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+          successMessage.textContent = 'Login successful! Redirecting...';
+          successMessage.style.display = 'block';
+          
+          // Store auth token in localStorage
+          localStorage.setItem('adminAuth', 'authenticated');
+          
+          // Redirect to protected admin view route after 1 second
+          setTimeout(() => {
+            window.location.href = '/admin/view';
+          }, 1000);
+        } else {
+          errorMessage.textContent = data.error || 'Invalid credentials';
+          errorMessage.style.display = 'block';
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Login error. Please try again.';
+        errorMessage.style.display = 'block';
+      } finally {
+        loginBtn.textContent = 'Login';
+        loginBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

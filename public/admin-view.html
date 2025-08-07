@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin View - GMCP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .header {
+      background-color: #003349;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 20px;
+      border-radius: 5px;
+    }
+    .logout-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      float: right;
+      margin-bottom: 10px;
+    }
+    .logout-btn:hover {
+      background-color: #c82333;
+    }
+    .refresh-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+    .refresh-btn:hover {
+      background-color: #218838;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+      font-size: 12px;
+    }
+    th {
+      background-color: #003349;
+      color: white;
+      position: sticky;
+      top: 0;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    .paid {
+      color: #28a745;
+      font-weight: bold;
+    }
+    .pending {
+      color: #ffc107;
+      font-weight: bold;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      font-size: 18px;
+    }
+    .download-link {
+      display: inline-block;
+      color: #007bff;
+      text-decoration: none;
+      padding: 2px 5px;
+      margin: 1px;
+      border: 1px solid #007bff;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+    .download-link:hover {
+      background-color: #007bff;
+      color: white;
+    }
+    .actions-cell {
+      white-space: nowrap;
+      min-width: 250px;
+      max-width: 300px;
+      font-size: 11px;
+    }
+    .search-filter-container {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-box, .filter-select {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+    }
+    .filter-select {
+      min-width: 150px;
+    }
+    .filter-label {
+      font-weight: bold;
+      color: #003349;
+    }
+    .clear-filters-btn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .clear-filters-btn:hover {
+      background-color: #5a6268;
+    }
+    .stats-container {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      text-align: center;
+      padding: 10px;
+      border-radius: 4px;
+      min-width: 100px;
+    }
+    .stat-item.total {
+      background-color: #e7f3ff;
+      color: #0066cc;
+    }
+    .stat-item.paid {
+      background-color: #e8f5e8;
+      color: #28a745;
+    }
+    .stat-item.pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+  </style>
+  <!-- Admin view uses secure backend API - No client Firebase SDK needed -->
+
+</head>
+<body>
+  <div class="header">
+    <h1>GMCP Admin Dashboard</h1>
+    <p>Student Registration Management</p>
+  </div>
+  
+  <button class="logout-btn" onclick="logout()">Logout</button>
+  <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
+  <div style="clear: both;"></div>
+  
+  <!-- Statistics Container -->
+  <div class="stats-container" id="statsContainer" style="display: none;">
+    <div class="stat-item total">
+      <div style="font-size: 24px; font-weight: bold;" id="totalCount">0</div>
+      <div>Total Applications</div>
+    </div>
+    <div class="stat-item paid">
+      <div style="font-size: 24px; font-weight: bold;" id="paidCount">0</div>
+      <div>Paid</div>
+    </div>
+    <div class="stat-item pending">
+      <div style="font-size: 24px; font-weight: bold;" id="pendingCount">0</div>
+      <div>Pending</div>
+    </div>
+  </div>
+  
+  <!-- Search and Filter Container -->
+  <div class="search-filter-container" id="searchFilterContainer" style="display: none;">
+    <input type="text" id="searchInput" class="search-box" placeholder="Search by student name, email, phone, or Aadhar number..." onkeyup="filterTable()">
+    
+    <label class="filter-label">Program:</label>
+    <select id="programFilter" class="filter-select" onchange="filterTable()">
+      <option value="">All Programs</option>
+      <option value="polytechnic">Polytechnic</option>
+      <option value="ug">UG</option>
+      <option value="iti">ITI</option>
+      <option value="others">Others</option>
+    </select>
+    
+    <label class="filter-label">Payment Status:</label>
+    <select id="paymentFilter" class="filter-select" onchange="filterTable()">
+      <option value="">All Status</option>
+      <option value="paid">Paid</option>
+      <option value="pending">Pending</option>
+    </select>
+    
+    <button class="clear-filters-btn" onclick="clearFilters()">Clear Filters</button>
+  </div>
+  
+  <div id="loading" class="loading">Loading student data...</div>
+  
+  <table id="dataTable" style="display: none;">
+    <thead>
+      <tr>
+        <th>S.No</th>
+        <th>Program</th>
+        <th>Course</th>
+        <th>Student Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Aadhar Number</th>
+        <th>Date of Birth</th>
+        <th>Permanent Address</th>
+        <th>Correspondence Address</th>
+        <th>Payment Amount</th>
+        <th>Total Fee</th>
+        <th>Transaction ID</th>
+        <th>Payment Status</th>
+        <th>Submission Date</th>
+<th>Documents</th>
+<th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Data rows will be inserted here -->
+    </tbody>
+  </table>
+
+  <script>
+    // Admin dashboard uses secure backend API - all data operations are server-side
+    
+    // Check authentication on page load
+    function checkAuth() {
+      return fetch('/admin/check-auth')
+        .then(response => {
+          if (response.ok) {
+            return true;
+          } else {
+            alert('Unauthorized access! Please login first.');
+            window.location.href = 'admin-login.html';
+            return false;
+          }
+        })
+        .catch(() => {
+          alert('Error checking authentication!');
+          window.location.href = 'admin-login.html';
+          return false;
+        });
+    }
+    
+    // Logout function
+    function logout() {
+      fetch('/admin/logout', { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            localStorage.removeItem('adminAuth');
+            alert('Logged out successfully!');
+            window.location.href = '/admin/login';
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('adminAuth');
+          window.location.href = '/admin/login';
+        });
+    }
+    // Load data from optimized server API with comprehensive error handling
+    async function loadData() {
+      console.log('🔄 Loading data from server API...');
+      
+      try {
+        const isAuthenticated = await checkAuth();
+        if (!isAuthenticated) {
+          console.log('❌ Authentication failed');
+          return;
+        }
+        
+        const loading = document.getElementById('loading');
+        const table = document.getElementById('dataTable');
+        const tbody = table.querySelector('tbody');
+        
+        loading.style.display = 'block';
+        table.style.display = 'none';
+        loading.textContent = 'Loading student data...';
+        
+        // Clear existing data
+        tbody.innerHTML = '';
+        
+        console.log('📡 Fetching registrations from /api/registrations...');
+        
+        // Use optimized server API instead of direct Firestore
+        const response = await fetch('/api/registrations');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Data received:', data);
+        
+        // Handle both old and new API response formats
+        const registrations = data.registrations || data;
+        const metadata = data.metadata || {};
+        
+        console.log(`📊 Processing ${registrations.length} registrations...`);
+        
+        if (registrations.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="17" style="text-align: center; padding: 20px;">No registrations found</td></tr>';
+          console.log('ℹ️ No registrations found');
+        } else {
+          registrations.forEach((item, index) => {
+            console.log(`Processing registration ${index + 1}:`, item.studentName);
+            
+            const row = document.createElement('tr');
+            
+            // Format date
+            let submissionDate = 'N/A';
+            if (item.createdAt) {
+              if (item.createdAt.toDate) {
+                // Firestore Timestamp
+                submissionDate = item.createdAt.toDate().toLocaleDateString();
+              } else if (item.createdAt._seconds) {
+                // Firestore Timestamp object
+                submissionDate = new Date(item.createdAt._seconds * 1000).toLocaleDateString();
+              } else {
+                // Regular date string or Date object
+                submissionDate = new Date(item.createdAt).toLocaleDateString();
+              }
+            }
+            
+            // Payment status
+            const paymentStatus = item.transactionId ? 
+              `<span class="paid">PAID</span>` : 
+              `<span class="pending">PENDING</span>`;
+            
+            // Documents list - handle both old and new formats
+            const documents = [];
+            
+            // Check for files in multiple possible locations
+            const getFileData = (fieldName) => {
+              return item[fieldName] || item.files?.[fieldName] || null;
+            };
+            
+            // Build document list
+            if (getFileData('aadharFile')) documents.push('Aadhar');
+            if (getFileData('casteFile')) documents.push('Caste');
+            if (getFileData('residentialFile')) documents.push('Residential');
+            if (getFileData('incomeFile')) documents.push('Income');
+            if (getFileData('marksheetFile')) documents.push('Marksheet');
+            if (getFileData('signatureFile')) documents.push('Signature');
+            
+            console.log('File data for', item.studentName, ':', {
+              aadharFile: getFileData('aadharFile'),
+              marksheetFile: getFileData('marksheetFile'),
+              signatureFile: getFileData('signatureFile')
+            });
+            
+            // Build secure action links (files accessible only through admin backend)
+            let actionLinks = '';
+            const aadharFile = getFileData('aadharFile');
+            const casteFile = getFileData('casteFile');
+            const residentialFile = getFileData('residentialFile');
+            const incomeFile = getFileData('incomeFile');
+            const marksheetFile = getFileData('marksheetFile');
+            const signatureFile = getFileData('signatureFile');
+            
+            // Helper function to get file path - use path if available, otherwise construct from filename
+            const getFilePath = (fileData) => {
+              if (!fileData) return null;
+              if (fileData.path) return fileData.path;
+              if (fileData.filename) return `uploads/${fileData.filename}`;
+              return null;
+            };
+            
+            const aadharPath = getFilePath(aadharFile);
+            const castePath = getFilePath(casteFile);
+            const residentialPath = getFilePath(residentialFile);
+            const incomePath = getFilePath(incomeFile);
+            const marksheetPath = getFilePath(marksheetFile);
+            const signaturePath = getFilePath(signatureFile);
+            
+            if (aadharPath) actionLinks += `<a href="/admin/files/${aadharPath}" target='_blank' class='download-link' title="View ${aadharFile.name || 'Aadhar File'}">👁️ View Aadhar</a> | <a href="/admin/files/${aadharPath}?download=true" class='download-link' title="Download ${aadharFile.name || 'Aadhar File'}">⬇️ Download</a><br>`;
+            if (castePath) actionLinks += `<a href="/admin/files/${castePath}" target='_blank' class='download-link' title="View ${casteFile.name || 'Caste File'}">👁️ View Caste</a> | <a href="/admin/files/${castePath}?download=true" class='download-link' title="Download ${casteFile.name || 'Caste File'}">⬇️ Download</a><br>`;
+            if (residentialPath) actionLinks += `<a href="/admin/files/${residentialPath}" target='_blank' class='download-link' title="View ${residentialFile.name || 'Residential File'}">👁️ View Residential</a> | <a href="/admin/files/${residentialPath}?download=true" class='download-link' title="Download ${residentialFile.name || 'Residential File'}">⬇️ Download</a><br>`;
+            if (incomePath) actionLinks += `<a href="/admin/files/${incomePath}" target='_blank' class='download-link' title="View ${incomeFile.name || 'Income File'}">👁️ View Income</a> | <a href="/admin/files/${incomePath}?download=true" class='download-link' title="Download ${incomeFile.name || 'Income File'}">⬇️ Download</a><br>`;
+            if (marksheetPath) actionLinks += `<a href="/admin/files/${marksheetPath}" target='_blank' class='download-link' title="View ${marksheetFile.name || 'Marksheet File'}">👁️ View Marksheet</a> | <a href="/admin/files/${marksheetPath}?download=true" class='download-link' title="Download ${marksheetFile.name || 'Marksheet File'}">⬇️ Download</a><br>`;
+            if (signaturePath) actionLinks += `<a href="/admin/files/${signaturePath}" target='_blank' class='download-link' title="View ${signatureFile.name || 'Signature File'}">👁️ View Signature</a> | <a href="/admin/files/${signaturePath}?download=true" class='download-link' title="Download ${signatureFile.name || 'Signature File'}">⬇️ Download</a><br>`;
+            
+            if (!actionLinks) {
+              console.log('No file links generated for', item.studentName, 'Raw item data:', item);
+            }
+            
+            row.innerHTML = `
+              <td>${index + 1}</td>
+              <td>${item.program || 'N/A'}</td>
+              <td>${item.course || 'N/A'}</td>
+              <td>${item.studentName || 'N/A'}</td>
+              <td>${item.email || 'N/A'}</td>
+              <td>${item.phoneNumber || 'N/A'}</td>
+              <td>${item.aadharNumber || 'N/A'}</td>
+              <td>${item.dateOfBirth || 'N/A'}</td>
+              <td>${item.permanentAddress || 'N/A'}</td>
+              <td>${item.correspondenceAddress || 'N/A'}</td>
+              <td>₹${item.paymentAmount || 'N/A'}</td>
+              <td>₹${item.totalFee || 'N/A'}</td>
+              <td>${item.transactionId || 'N/A'}</td>
+              <td>${paymentStatus}</td>
+              <td>${submissionDate}</td>
+              <td>${documents.join(', ') || 'None'}</td>
+              <td class="actions-cell">${actionLinks || 'No files'}</td>
+            `;
+            
+            tbody.appendChild(row);
+          });
+          
+          console.log('✅ Data loaded successfully');
+        }
+        
+        loading.style.display = 'none';
+        table.style.display = 'table';
+        
+        // Show search/filter controls and statistics
+        document.getElementById('searchFilterContainer').style.display = 'flex';
+        document.getElementById('statsContainer').style.display = 'flex';
+        
+        // Update statistics
+        updateStatistics(registrations);
+        
+        // Store original data for filtering
+        window.originalRegistrations = registrations;
+        
+        // Update page title with count
+        document.querySelector('.header h1').textContent = `GMCP Admin Dashboard (${registrations.length} registrations)`;
+        
+      } catch (error) {
+        console.error('❌ Error loading data:', error);
+        
+        const loading = document.getElementById('loading');
+        loading.innerHTML = `
+          <div style="color: red; text-align: center;">
+            <h3>Error Loading Data</h3>
+            <p>${error.message}</p>
+            <button onclick="loadData()" style="padding: 10px 20px; background: #003349; color: white; border: none; border-radius: 5px; cursor: pointer;">Retry</button>
+          </div>
+        `;
+        
+        alert(`❌ Error loading data: ${error.message}\n\nPlease check the console for more details.`);
+      }
+    }
+    
+    // Function to update statistics
+    function updateStatistics(data) {
+      const totalCount = data.length;
+      const paidCount = data.filter(item => item.transactionId).length;
+      const pendingCount = totalCount - paidCount;
+      
+      document.getElementById('totalCount').textContent = totalCount;
+      document.getElementById('paidCount').textContent = paidCount;
+      document.getElementById('pendingCount').textContent = pendingCount;
+    }
+    
+    // Function to filter table based on search and filters
+    function filterTable() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      const programFilter = document.getElementById('programFilter').value.toLowerCase();
+      const paymentFilter = document.getElementById('paymentFilter').value.toLowerCase();
+      
+      const table = document.getElementById('dataTable');
+      const tbody = table.querySelector('tbody');
+      
+      if (!window.originalRegistrations) {
+        console.log('No original data to filter');
+        return;
+      }
+      
+      // Filter the original data
+      let filteredData = window.originalRegistrations.filter(item => {
+        // Search filter
+        const searchMatch = !searchTerm || 
+          (item.studentName && item.studentName.toLowerCase().includes(searchTerm)) ||
+          (item.email && item.email.toLowerCase().includes(searchTerm)) ||
+          (item.phoneNumber && item.phoneNumber.toLowerCase().includes(searchTerm)) ||
+          (item.aadharNumber && item.aadharNumber.toLowerCase().includes(searchTerm)) ||
+          (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm));
+        
+        // Program filter
+        const programMatch = !programFilter || 
+          (item.program && item.program.toLowerCase() === programFilter);
+        
+        // Payment status filter
+        const paymentMatch = !paymentFilter || 
+          (paymentFilter === 'paid' && item.transactionId) ||
+          (paymentFilter === 'pending' && !item.transactionId);
+        
+        return searchMatch && programMatch && paymentMatch;
+      });
+      
+      // Clear existing rows
+      tbody.innerHTML = '';
+      
+      if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="17" style="text-align: center; padding: 20px;">No records found matching the filters</td></tr>';
+      } else {
+        // Rebuild table with filtered data
+        filteredData.forEach((item, index) => {
+          const row = document.createElement('tr');
+          
+          // Format date
+          let submissionDate = 'N/A';
+          if (item.createdAt) {
+            if (item.createdAt.toDate) {
+              submissionDate = item.createdAt.toDate().toLocaleDateString();
+            } else if (item.createdAt._seconds) {
+              submissionDate = new Date(item.createdAt._seconds * 1000).toLocaleDateString();
+            } else {
+              submissionDate = new Date(item.createdAt).toLocaleDateString();
+            }
+          }
+          
+          // Payment status
+          const paymentStatus = item.transactionId ? 
+            `<span class="paid">PAID</span>` : 
+            `<span class="pending">PENDING</span>`;
+          
+          // Documents list - same logic as main view
+          const documents = [];
+          
+          // Check for files in multiple possible locations
+          const getFileData = (fieldName) => {
+            return item[fieldName] || item.files?.[fieldName] || null;
+          };
+          
+          // Build document list
+          if (getFileData('aadharFile')) documents.push('Aadhar');
+          if (getFileData('casteFile')) documents.push('Caste');
+          if (getFileData('residentialFile')) documents.push('Residential');
+          if (getFileData('incomeFile')) documents.push('Income');
+          if (getFileData('marksheetFile')) documents.push('Marksheet');
+          if (getFileData('signatureFile')) documents.push('Signature');
+          
+          // Build secure action links (files accessible only through admin backend)
+          let actionLinks = '';
+          const aadharFile = getFileData('aadharFile');
+          const casteFile = getFileData('casteFile');
+          const residentialFile = getFileData('residentialFile');
+          const incomeFile = getFileData('incomeFile');
+          const marksheetFile = getFileData('marksheetFile');
+          const signatureFile = getFileData('signatureFile');
+          
+          // Helper function to get file path - use path if available, otherwise construct from filename
+          const getFilePath = (fileData) => {
+            if (!fileData) return null;
+            if (fileData.path) return fileData.path;
+            if (fileData.filename) return `uploads/${fileData.filename}`;
+            return null;
+          };
+          
+          const aadharPath = getFilePath(aadharFile);
+          const castePath = getFilePath(casteFile);
+          const residentialPath = getFilePath(residentialFile);
+          const incomePath = getFilePath(incomeFile);
+          const marksheetPath = getFilePath(marksheetFile);
+          const signaturePath = getFilePath(signatureFile);
+          
+          if (aadharPath) actionLinks += `<a href="/admin/files/${aadharPath}" target='_blank' class='download-link' title="View ${aadharFile.name || 'Aadhar File'}">👁️ View Aadhar</a> | <a href="/admin/files/${aadharPath}?download=true" class='download-link' title="Download ${aadharFile.name || 'Aadhar File'}">⬇️ Download</a><br>`;
+          if (castePath) actionLinks += `<a href="/admin/files/${castePath}" target='_blank' class='download-link' title="View ${casteFile.name || 'Caste File'}">👁️ View Caste</a> | <a href="/admin/files/${castePath}?download=true" class='download-link' title="Download ${casteFile.name || 'Caste File'}">⬇️ Download</a><br>`;
+          if (residentialPath) actionLinks += `<a href="/admin/files/${residentialPath}" target='_blank' class='download-link' title="View ${residentialFile.name || 'Residential File'}">👁️ View Residential</a> | <a href="/admin/files/${residentialPath}?download=true" class='download-link' title="Download ${residentialFile.name || 'Residential File'}">⬇️ Download</a><br>`;
+          if (incomePath) actionLinks += `<a href="/admin/files/${incomePath}" target='_blank' class='download-link' title="View ${incomeFile.name || 'Income File'}">👁️ View Income</a> | <a href="/admin/files/${incomePath}?download=true" class='download-link' title="Download ${incomeFile.name || 'Income File'}">⬇️ Download</a><br>`;
+          if (marksheetPath) actionLinks += `<a href="/admin/files/${marksheetPath}" target='_blank' class='download-link' title="View ${marksheetFile.name || 'Marksheet File'}">👁️ View Marksheet</a> | <a href="/admin/files/${marksheetPath}?download=true" class='download-link' title="Download ${marksheetFile.name || 'Marksheet File'}">⬇️ Download</a><br>`;
+          if (signaturePath) actionLinks += `<a href="/admin/files/${signaturePath}" target='_blank' class='download-link' title="View ${signatureFile.name || 'Signature File'}">👁️ View Signature</a> | <a href="/admin/files/${signaturePath}?download=true" class='download-link' title="Download ${signatureFile.name || 'Signature File'}">⬇️ Download</a><br>`;
+          
+          row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${item.program || 'N/A'}</td>
+            <td>${item.course || 'N/A'}</td>
+            <td>${item.studentName || 'N/A'}</td>
+            <td>${item.email || 'N/A'}</td>
+            <td>${item.phoneNumber || 'N/A'}</td>
+            <td>${item.aadharNumber || 'N/A'}</td>
+            <td>${item.dateOfBirth || 'N/A'}</td>
+            <td>${item.permanentAddress || 'N/A'}</td>
+            <td>${item.correspondenceAddress || 'N/A'}</td>
+            <td>₹${item.paymentAmount || 'N/A'}</td>
+            <td>₹${item.totalFee || 'N/A'}</td>
+            <td>${item.transactionId || 'N/A'}</td>
+            <td>${paymentStatus}</td>
+            <td>${submissionDate}</td>
+            <td>${documents.join(', ') || 'None'}</td>
+            <td class="actions-cell">${actionLinks || 'No files'}</td>
+          `;
+          
+          tbody.appendChild(row);
+        });
+      }
+      
+      // Update statistics with filtered data
+      updateStatistics(filteredData);
+      
+      // Update page title
+      document.querySelector('.header h1').textContent = `GMCP Admin Dashboard (${filteredData.length} of ${window.originalRegistrations.length} registrations)`;
+    }
+    
+    // Function to clear all filters
+    function clearFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('programFilter').value = '';
+      document.getElementById('paymentFilter').value = '';
+      filterTable();
+    }
+    
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', async function() {
+      console.log('🚀 Initializing admin dashboard...');
+      const isAuthenticated = await checkAuth();
+      if (isAuthenticated) {
+        console.log('✅ Authentication successful');
+        await loadData();
+      } else {
+        console.log('❌ Authentication failed');
+      }
+    });
+    
+  </script>
+</body>
+</html>

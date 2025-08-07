@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Successful - GMCP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+    }
+    .success-icon {
+      font-size: 4rem;
+      color: #28a745;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #003349;
+      margin-bottom: 20px;
+    }
+    .details {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+      text-align: left;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+    .btn {
+      background-color: #003349;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px;
+      font-size: 16px;
+    }
+    .btn:hover {
+      background-color: #004a5c;
+    }
+    .note {
+      background: #e9ecef;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success-icon">✅</div>
+    <h1>Payment Successful!</h1>
+    <p>Thank you for your admission fee payment. Your application has been successfully submitted.</p>
+    
+    <div class="details" id="paymentDetails">
+      <!-- Payment details will be populated here -->
+    </div>
+    
+    <div>
+      <button onclick="printReceipt()" class="btn">Print Receipt</button>
+      <a href="/" class="btn">Submit Another Application</a>
+    </div>
+    
+    <div class="note">
+      <strong>Important:</strong> Please keep your transaction ID safe for future reference. 
+      You will receive a confirmation email shortly with all the details.
+    </div>
+  </div>
+
+  <script>
+    // Display payment details from localStorage
+    const paymentData = JSON.parse(localStorage.getItem('paymentData'));
+    const detailsDiv = document.getElementById('paymentDetails');
+    
+    if (paymentData) {
+      detailsDiv.innerHTML = `
+        <div class="detail-row">
+          <span><strong>Student Name:</strong></span>
+          <span>${paymentData.studentName}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Course:</strong></span>
+          <span>${paymentData.course}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Email:</strong></span>
+          <span>${paymentData.email}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Phone:</strong></span>
+          <span>${paymentData.phoneNumber}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Amount Paid:</strong></span>
+          <span>₹${paymentData.totalFee}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Transaction ID:</strong></span>
+          <span style="color: #007bff; font-weight: bold;">${paymentData.transactionId}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Payment Time:</strong></span>
+          <span>${new Date(paymentData.paymentTime).toLocaleString()}</span>
+        </div>
+      `;
+    } else {
+      detailsDiv.innerHTML = '<p>No payment details found.</p>';
+    }
+    
+    // Function to print receipt
+    function printReceipt() {
+      const paymentData = JSON.parse(localStorage.getItem('paymentData'));
+      if (!paymentData) {
+        alert('No payment data found to print receipt.');
+        return;
+      }
+      
+      // Create printable content
+      const printContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; border-bottom: 2px solid #003349; padding-bottom: 20px; margin-bottom: 20px;">
+            <h1>GMCP Admission Receipt</h1>
+            <p>Ganga Memorial College of Polytechnic</p>
+            <p>Harnaout, Nalanda</p>
+          </div>
+          
+          <div style="margin: 20px 0;">
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>Transaction ID:</strong></span>
+              <span>${paymentData.transactionId}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>Student Name:</strong></span>
+              <span>${paymentData.studentName}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>Course:</strong></span>
+              <span>${paymentData.course}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>Amount Paid:</strong></span>
+              <span>₹${paymentData.totalFee}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>Payment Time:</strong></span>
+              <span>${new Date(paymentData.paymentTime).toLocaleString()}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin: 10px 0; color: #28a745; font-weight: bold;">
+              <span><strong>Status:</strong></span>
+              <span>PAID</span>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Payment Receipt</title>
+          <style>
+            @media print { button { display: none; } }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+          <div style="text-align: center; margin-top: 30px;">
+            <button onclick="window.print(); window.close();">Print</button>
+            <button onclick="window.close()">Close</button>
+          </div>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    }
+  </script>
+</body>
+</html>

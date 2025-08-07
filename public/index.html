@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registration Form - GMCP</title>
+   
+  <link rel="stylesheet" href="form.css">
+
+
+  
+
+</head>
+<body>
+
+  <div class="header">
+    <img src="Logo.jpg" alt="GMCP Logo">
+    <h1>GANGA MEMORIAL COLLEGE OF POLYTECHNIC</h1>
+    <p>HARNAUT, NALANDA</p>
+    <p style="color: red;">Approved by AICTE, HRD, Govt. of India Affiliated to SBTE, Patna</p>
+    <p>Email: admission@gmcpnalanda.com | Contact: +91-9473000022, 8002864770</p>
+  </div>
+
+  <div class="form-container">
+    <h2>Registration Form</h2>
+    <form id="registrationForm">
+      <div class="form-group">
+        <label>*Select Program:</label>
+        <select id="program" name="program" required onchange="updateCourses()">
+          <option value="">--Select--</option>
+          <option value="polytechnic">Polytechnic</option>
+          <option value="ug">UG</option>
+          <option value="iti">ITI</option>
+          <option value="others">Others</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>*Select Course:</label>
+        <select id="course" name="course" required>
+          <option value="">--Select Your Branch--</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>*Student Name:</label>
+        <input type="text" name="studentName" required placeholder="Enter name">
+      </div>
+
+      <div class="form-group">
+        <label>*Email:</label>
+        <input type="email" name="email" required placeholder="Enter email">
+      </div>
+
+      <div class="form-group">
+        <label>*Phone Number:</label>
+        <input type="text" name="phoneNumber" required placeholder="Enter your number">
+      </div>
+
+      <div class="form-group">
+        <label>*Aadhar Number:</label>
+        <input type="text" name="aadharNumber" required placeholder="Enter Aadhar number">
+      </div>
+
+      <div class="form-group">
+        <label>*Permanent Address:</label>
+        <input type="text" name="permanentAddress" required placeholder="Enter permanent address">
+      </div>
+
+      <div class="form-group">
+        <label>*Correspondence Address: <input type="checkbox" name="sameAddress"> Same as Permanent Address</label>
+        <input type="text" name="correspondenceAddress" placeholder="Enter correspondence address">
+      </div>
+
+      <div class="form-group">
+        <label>*Upload Aadhar: <small>Front and back together in single image or pdf (Max 5MB)</small></label>
+        <input type="file" name="aadharFile" required accept=".jpg,.jpeg,.png,.pdf">
+      </div>
+
+      <div class="form-group">
+        <label>Upload Caste Certificate:</label>
+        <input type="file" name="casteFile">
+      </div>
+
+      <div class="form-group">
+        <label>Upload Residential Certificate:</label>
+        <input type="file" name="residentialFile">
+      </div>
+
+      <div class="form-group">
+        <label>Upload Income Certificate:</label>
+        <input type="file" name="incomeFile">
+      </div>
+
+      <div class="form-group">
+        <label>*DCECE Admit Card / 10th Marksheet / ITI:</label>
+        <input type="file" name="marksheetFile" required>
+      </div>
+
+      <div class="form-group">
+        <label>*Date of Birth:</label>
+        <input type="date" name="dateOfBirth" required>
+      </div>
+
+      <div class="form-group">
+        <label>*Upload Signature: <small>Only jpg format</small></label>
+        <input type="file" name="signatureFile" required>
+      </div>
+
+      <div class="form-group">
+        <label>*Payment Amount (Admission Fee):</label>
+        <input type="text" name="paymentAmount" required placeholder="Enter Amount">
+      </div>
+
+      <div class="full-width">
+        <label>*Total Fee (including Tax):</label>
+        <input type="text" name="totalFee" required>
+      </div>
+
+      <div class="submit-button full-width">
+        <button type="submit">Submit & Pay</button>
+      </div>
+    </form>
+  </div>
+  <!-- Firebase SDK removed - All Firebase operations now handled by backend for security -->
+  <script>
+    console.log("✅ Frontend initialized - Backend handles all data operations");
+  </script>
+  
+  <script src="form.js"></script>
+</body>
+</html>
