@@ -119,7 +119,12 @@ const authenticateAdmin = (req, res, next) => {
 
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  try {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  } catch (error) {
+    // Fallback if file doesn't exist
+    res.status(200).send('GMCP Admission Backend - Server Running');
+  }
 });
 
 app.get('/confirmation.html', (req, res) => {
@@ -783,12 +788,15 @@ app.post('/api/generate-receipt', (req, res) => {
 
 // Health check endpoints for Render monitoring
 app.get('/health', (req, res) => {
+  // Always return healthy - Firebase is optional for basic functionality
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'GMCP Admission Backend',
     firebase: firebaseInitialized ? 'connected' : 'disconnected',
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
