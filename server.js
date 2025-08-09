@@ -86,7 +86,31 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
+// Host validation middleware - ensure requests only come from allowed domain
+const hostValidation = (req, res, next) => {
+  const host = req.get('host');
+  const allowedHost = 'www.gmcpnalanda.com';
+  const isLocalDevelopment = process.env.NODE_ENV !== 'production' || host.includes('localhost') || host.includes('127.0.0.1');
+  
+  // Allow local development and the main domain
+  if (isLocalDevelopment || host === allowedHost) {
+    return next();
+  }
+  
+  // Redirect to the correct domain with permanent redirect (301)
+  console.log(`🔒 Host validation: Redirecting from ${host} to ${allowedHost}`);
+  return res.redirect(301, `https://${allowedHost}${req.originalUrl}`);
+  
+  // Alternative: Block access completely (uncomment if you prefer blocking over redirecting)
+  // console.log(`🚫 Host validation: Blocking access from unauthorized host: ${host}`);
+  // return res.status(403).json({ 
+  //   error: 'Access denied', 
+  //   message: `This service is only available through ${allowedHost}` 
+  // });
+};
+
 // Middleware
+app.use(hostValidation); // Apply host validation first
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
