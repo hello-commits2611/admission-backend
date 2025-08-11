@@ -93,7 +93,9 @@
         dateOfBirth: "Date of Birth",
         signatureFile: "Signature File",
         paymentAmount: "Payment Amount",
-        totalFee: "Total Fee"
+        totalFee: "Total Fee",
+        transactionId: "Transaction ID",
+        sinNumber: "SIN Number"
       };
 
       for (let key in data) {
@@ -285,6 +287,10 @@
             <span><strong>Payment Time:</strong></span>
             <span>${new Date().toLocaleString()}</span>
           </div>
+          ${data.sinNumber ? `<div class="detail-row">
+            <span><strong>SIN Number:</strong></span>
+            <span style="color: #003349; font-weight: bold;">${data.sinNumber}</span>
+          </div>` : ''}
           <div class="detail-row success">
             <span><strong>Status:</strong></span>
             <span>PAID</span>

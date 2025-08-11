@@ -6,6 +6,14 @@ const courseOptions = {
   others: ["Not Applicable"]
 };
 
+// Course fees for different programs
+const courseFees = {
+  polytechnic: 5800,
+  ug: 1500,
+  iti: 2000,
+  others: 0
+};
+
 // Function to update course options based on selected program
 function updateCourses() {
   const programSelect = document.getElementById("program");
@@ -33,6 +41,101 @@ function updateCourses() {
 
 // Make updateCourses function globally available
 window.updateCourses = updateCourses;
+
+// Function to validate Aadhaar number (exactly 12 digits)
+function validateAadhar(input) {
+  const value = input.value;
+  const aadharError = document.getElementById('aadharError');
+  
+  // Remove non-numeric characters
+  input.value = value.replace(/[^0-9]/g, '');
+  
+  // Check if exactly 12 digits
+  if (input.value.length !== 12 && input.value.length > 0) {
+    aadharError.style.display = 'block';
+    input.style.borderColor = 'red';
+  } else {
+    aadharError.style.display = 'none';
+    input.style.borderColor = '#888';
+  }
+}
+
+// Make validateAadhar function globally available
+window.validateAadhar = validateAadhar;
+
+// Function to update course fee based on selected program
+function updateCourseFee() {
+  const programSelect = document.getElementById("program");
+  const totalCourseFeeInput = document.getElementById("totalCourseFee");
+  const paymentAmountInput = document.getElementById("paymentAmount");
+  const dueAmountInput = document.getElementById("dueAmount");
+  
+  if (!programSelect || !totalCourseFeeInput) {
+    return;
+  }
+
+  const selectedProgram = programSelect.value;
+  const fee = courseFees[selectedProgram] || 0;
+  
+  totalCourseFeeInput.value = fee > 0 ? `₹${fee}` : '';
+  
+  // Reset payment amount and calculate due amount
+  if (paymentAmountInput.value) {
+    calculateDueAmount();
+  } else {
+    dueAmountInput.value = fee > 0 ? `₹${fee}` : '';
+  }
+}
+
+// Function to calculate due amount based on payment
+function calculateDueAmount() {
+  const programSelect = document.getElementById("program");
+  const paymentAmountInput = document.getElementById("paymentAmount");
+  const dueAmountInput = document.getElementById("dueAmount");
+  const paymentError = document.getElementById("paymentError");
+  
+  if (!programSelect || !paymentAmountInput || !dueAmountInput) {
+    return;
+  }
+
+  const selectedProgram = programSelect.value;
+  const totalFee = courseFees[selectedProgram] || 0;
+  const paymentAmount = parseFloat(paymentAmountInput.value) || 0;
+  
+  // Validate minimum payment
+  if (paymentAmount > 0 && paymentAmount < 1000) {
+    paymentError.style.display = 'block';
+    paymentAmountInput.style.borderColor = 'red';
+    dueAmountInput.value = '';
+    return;
+  } else {
+    paymentError.style.display = 'none';
+    paymentAmountInput.style.borderColor = '#888';
+  }
+  
+  // Calculate due amount
+  if (totalFee > 0 && paymentAmount > 0) {
+    const dueAmount = Math.max(0, totalFee - paymentAmount);
+    dueAmountInput.value = `₹${dueAmount}`;
+  } else if (totalFee > 0) {
+    dueAmountInput.value = `₹${totalFee}`;
+  } else {
+    dueAmountInput.value = '';
+  }
+}
+
+// Function to get payment status based on amounts
+function getPaymentStatus(totalFee, paymentAmount) {
+  if (!paymentAmount || paymentAmount <= 0) {
+    return 'Failed';
+  }
+  
+  if (paymentAmount >= totalFee) {
+    return 'Paid';
+  }
+  
+  return 'Paid/Due';
+}
 
 // Function to handle "Same as Permanent Address" checkbox
 function handleAddressCheckbox() {
@@ -256,9 +359,24 @@ async function handleFormSubmission(event) {
   try {
     submitButton.textContent = 'Uploading files...';
     
-    // Collect basic form data
+    // Collect basic form data with new fields
+    const programValue = form.program.value;
+    const paymentAmountValue = parseFloat(form.paymentAmount.value) || 0;
+    const totalFeeValue = courseFees[programValue] || 0;
+    const dueAmountValue = Math.max(0, totalFeeValue - paymentAmountValue);
+    const paymentStatus = getPaymentStatus(totalFeeValue, paymentAmountValue);
+    
+    // Generate transaction ID for paid/due registrations
+    let transactionId = null;
+    if (paymentStatus === 'Paid' || paymentStatus === 'Paid/Due') {
+      // Generate a transaction ID based on timestamp and program
+      const timestamp = Date.now();
+      const programCode = programValue.toUpperCase().substring(0, 3);
+      transactionId = `TXN${programCode}${timestamp}`;
+    }
+
     const formData = {
-      program: form.program.value,
+      program: programValue,
       course: form.course.value,
       studentName: form.studentName.value,
       email: form.email.value,
@@ -267,8 +385,11 @@ async function handleFormSubmission(event) {
       permanentAddress: form.permanentAddress.value,
       correspondenceAddress: form.correspondenceAddress.value,
       dateOfBirth: form.dateOfBirth.value,
-      paymentAmount: form.paymentAmount.value,
-      totalFee: form.totalFee.value,
+      totalCourseFee: totalFeeValue,
+      paymentAmount: paymentAmountValue,
+      dueAmount: dueAmountValue,
+      paymentStatus: paymentStatus,
+      transactionId: transactionId,
       sameAddress: form.sameAddress.checked,
       createdAt: new Date().toISOString(),
       status: 'pending'
@@ -378,7 +499,17 @@ document.addEventListener('DOMContentLoaded', function() {
   // Set up program dropdown change event (backup to inline onchange)
   const programSelect = document.getElementById('program');
   if (programSelect) {
-    programSelect.addEventListener('change', updateCourses);
+    programSelect.addEventListener('change', function() {
+      updateCourses();
+      updateCourseFee();
+    });
+  }
+  
+  // Set up payment amount change event
+  const paymentAmountInput = document.getElementById('paymentAmount');
+  if (paymentAmountInput) {
+    paymentAmountInput.addEventListener('input', calculateDueAmount);
+    paymentAmountInput.addEventListener('blur', calculateDueAmount);
   }
 
   const form = document.getElementById('registrationForm');

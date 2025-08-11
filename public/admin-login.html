@@ -5,83 +5,251 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login - GMCP</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #003349;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background-attachment: fixed;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
+      min-height: 100vh;
+      position: relative;
+      overflow: hidden;
     }
-    .login-container {
-      background: white;
-      padding: 40px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+
+    /* Animated background particles */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      max-width: 400px;
+      height: 100%;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+      animation: float 6s ease-in-out infinite;
+      z-index: -1;
     }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 50px 40px;
+      border-radius: 20px;
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+      width: 100%;
+      max-width: 450px;
+      position: relative;
+      overflow: hidden;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 20px 20px 0 0;
+    }
+
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
-    .header h1 {
-      color: #003349;
-      margin-bottom: 10px;
-    }
-    .form-group {
+
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
       margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 3px solid #667eea;
     }
+
+    .header h1 {
+      color: #2d3748;
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: #718096;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+      position: relative;
+    }
+
     label {
       display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #333;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #4a5568;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
     input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
+      padding: 15px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
       box-sizing: border-box;
       font-size: 16px;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+      outline: none;
     }
+
+    input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 1);
+    }
+
     .login-btn {
       width: 100%;
-      padding: 12px;
-      background-color: #003349;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 12px;
       font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      overflow: hidden;
     }
+
+    .login-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .login-btn:hover::before {
+      left: 100%;
+    }
+
     .login-btn:hover {
-      background-color: #004a5c;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
     }
+
     .login-btn:disabled {
-      background-color: #ccc;
+      background: #a0aec0;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
+
     .error-message {
-      color: red;
+      background: linear-gradient(135deg, #fed7d7, #feb2b2);
+      color: #c53030;
       text-align: center;
-      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
       display: none;
+      font-weight: 500;
+      border: 1px solid #fc8181;
     }
+
     .success-message {
-      color: green;
+      background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+      color: #276749;
       text-align: center;
-      margin-top: 10px;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
       display: none;
+      font-weight: 500;
+      border: 1px solid #68d391;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+    }
+
+    .footer strong {
+      color: #ffd700;
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        margin: 20px;
+        padding: 30px 25px;
+      }
+
+      .header h1 {
+        font-size: 1.6rem;
+      }
+
+      input[type="text"], input[type="password"] {
+        padding: 12px 15px;
+      }
+
+      .login-btn {
+        padding: 12px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="login-container">
     <div class="header">
+      <img src="Logo.jpg" alt="GMCP Logo">
       <h1>Admin Login</h1>
       <p>GMCP Admission System</p>
     </div>
@@ -102,6 +270,10 @@
       <div class="error-message" id="errorMessage"></div>
       <div class="success-message" id="successMessage"></div>
     </form>
+  </div>
+  
+  <div class="footer">
+    <p>Powered by <strong>Ganga Memorial Educational and Development Society</strong></p>
   </div>
 
   <script>

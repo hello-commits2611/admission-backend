@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test SIN Display - GMCP</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .section {
+      background: #f8f9fa;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+    .btn {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    .btn-success { background-color: #28a745; }
+    .btn-success:hover { background-color: #1e7e34; }
+    .btn-danger { background-color: #dc3545; }
+    .btn-danger:hover { background-color: #c82333; }
+    pre {
+      background: #f1f1f1;
+      padding: 10px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .highlight {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔢 SIN Number Testing & Debugging</h1>
+  <p>This page helps debug SIN number generation and display issues.</p>
+
+  <!-- Step 1: Check localStorage -->
+  <div class="section">
+    <h3>📱 Step 1: Check localStorage Data</h3>
+    <button onclick="checkLocalStorage()" class="btn">Check localStorage</button>
+    <button onclick="clearLocalStorage()" class="btn btn-danger">Clear localStorage</button>
+    <div id="localStorageData"></div>
+  </div>
+
+  <!-- Step 2: Create test data -->
+  <div class="section">
+    <h3>🧪 Step 2: Create Test Payment Data</h3>
+    <button onclick="createTestPaymentData()" class="btn btn-success">Create Test Payment</button>
+    <button onclick="createTestPaymentWithSIN()" class="btn btn-success">Create Test Payment with SIN</button>
+    <div id="testDataResult"></div>
+  </div>
+
+  <!-- Step 3: Test registration fetch -->
+  <div class="section">
+    <h3>🔗 Step 3: Test Registration API</h3>
+    <input type="text" id="registrationId" placeholder="Enter Registration ID" style="padding: 8px; width: 250px;">
+    <button onclick="fetchRegistration()" class="btn">Fetch Registration</button>
+    <div id="registrationResult"></div>
+  </div>
+
+  <!-- Step 4: Simulate thank-you page -->
+  <div class="section">
+    <h3>🎭 Step 4: Simulate Thank You Page Logic</h3>
+    <button onclick="simulateThankYouPage()" class="btn">Simulate Thank You Page</button>
+    <div id="simulationResult"></div>
+  </div>
+
+  <!-- Step 5: Display payment details -->
+  <div class="section">
+    <h3>📄 Step 5: Payment Details Display</h3>
+    <div id="paymentDisplay" class="highlight" style="display: none;">
+      <!-- Payment details will be displayed here -->
+    </div>
+  </div>
+
+  <script>
+    function log(message, type = 'info') {
+      console.log(`[TEST] ${message}`);
+      const timestamp = new Date().toLocaleTimeString();
+      const logEntry = `${timestamp}: ${message}`;
+      
+      // Also display in the UI for easier debugging
+      const logDiv = document.createElement('div');
+      logDiv.style.fontSize = '12px';
+      logDiv.style.color = type === 'error' ? '#dc3545' : type === 'success' ? '#28a745' : '#007bff';
+      logDiv.textContent = logEntry;
+      
+      document.body.appendChild(logDiv);
+    }
+
+    function checkLocalStorage() {
+      log('🔍 Checking localStorage data...');
+      
+      const paymentData = localStorage.getItem('paymentData');
+      const applicationId = localStorage.getItem('applicationId');
+      
+      const result = document.getElementById('localStorageData');
+      result.innerHTML = `
+        <h4>localStorage Contents:</h4>
+        <div class="detail-row">
+          <span><strong>paymentData:</strong></span>
+          <span>${paymentData ? 'Present' : 'Missing'}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>applicationId:</strong></span>
+          <span>${applicationId || 'Missing'}</span>
+        </div>
+        <pre>${JSON.stringify({
+          paymentData: paymentData ? JSON.parse(paymentData) : null,
+          applicationId: applicationId
+        }, null, 2)}</pre>
+      `;
+      
+      log(`📊 Payment data: ${paymentData ? 'Found' : 'Not found'}`);
+      log(`📊 Application ID: ${applicationId || 'Not found'}`);
+      
+      if (paymentData) {
+        const parsed = JSON.parse(paymentData);
+        log(`🔢 SIN Number in payment data: ${parsed.sinNumber || 'Not found'}`);
+      }
+    }
+
+    function clearLocalStorage() {
+      localStorage.removeItem('paymentData');
+      localStorage.removeItem('applicationId');
+      log('🗑️ localStorage cleared', 'success');
+      checkLocalStorage();
+    }
+
+    function createTestPaymentData() {
+      const testPaymentData = {
+        studentName: "Test Student",
+        course: "Computer Science",
+        program: "Polytechnic",
+        email: "test@example.com",
+        phoneNumber: "9876543210",
+        paymentAmount: 5000,
+        totalFee: 5000,
+        transactionId: "TXN" + Date.now(),
+        paymentTime: new Date().toISOString(),
+        paymentStatus: "paid"
+      };
+      
+      const testApplicationId = "test_" + Date.now();
+      
+      localStorage.setItem('paymentData', JSON.stringify(testPaymentData));
+      localStorage.setItem('applicationId', testApplicationId);
+      
+      log('✅ Test payment data created', 'success');
+      
+      const result = document.getElementById('testDataResult');
+      result.innerHTML = `
+        <div class="highlight">
+          <h4>Test Data Created:</h4>
+          <pre>${JSON.stringify(testPaymentData, null, 2)}</pre>
+          <p><strong>Application ID:</strong> ${testApplicationId}</p>
+        </div>
+      `;
+    }
+
+    function createTestPaymentWithSIN() {
+      const testPaymentData = {
+        studentName: "Test Student with SIN",
+        course: "Computer Science",
+        program: "Polytechnic",
+        email: "test@example.com",
+        phoneNumber: "9876543210",
+        paymentAmount: 5000,
+        totalFee: 5000,
+        transactionId: "TXN" + Date.now(),
+        paymentTime: new Date().toISOString(),
+        paymentStatus: "paid",
+        sinNumber: "POLY-CS-25-123" // Pre-set SIN for testing
+      };
+      
+      const testApplicationId = "test_sin_" + Date.now();
+      
+      localStorage.setItem('paymentData', JSON.stringify(testPaymentData));
+      localStorage.setItem('applicationId', testApplicationId);
+      
+      log('✅ Test payment data with SIN created', 'success');
+      
+      const result = document.getElementById('testDataResult');
+      result.innerHTML = `
+        <div class="highlight">
+          <h4>Test Data with SIN Created:</h4>
+          <pre>${JSON.stringify(testPaymentData, null, 2)}</pre>
+          <p><strong>Application ID:</strong> ${testApplicationId}</p>
+        </div>
+      `;
+    }
+
+    async function fetchRegistration() {
+      const registrationId = document.getElementById('registrationId').value.trim();
+      
+      if (!registrationId) {
+        log('❌ Please enter a registration ID', 'error');
+        return;
+      }
+      
+      log(`🔗 Fetching registration: ${registrationId}`);
+      
+      try {
+        const response = await fetch(`/api/registrations/${registrationId}`);
+        log(`📡 Response status: ${response.status} ${response.statusText}`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        log('📄 Registration data received', 'success');
+        
+        const resultDiv = document.getElementById('registrationResult');
+        resultDiv.innerHTML = `
+          <h4>Registration API Response:</h4>
+          <div class="detail-row">
+            <span><strong>Success:</strong></span>
+            <span>${result.success ? '✅ Yes' : '❌ No'}</span>
+          </div>
+          <div class="detail-row">
+            <span><strong>SIN Number:</strong></span>
+            <span style="color: #007bff; font-weight: bold;">${result.registration?.sinNumber || 'Not found'}</span>
+          </div>
+          <pre>${JSON.stringify(result, null, 2)}</pre>
+        `;
+        
+        log(`🔢 SIN from server: ${result.registration?.sinNumber || 'Not found'}`);
+        
+      } catch (error) {
+        log(`❌ Error fetching registration: ${error.message}`, 'error');
+        
+        const resultDiv = document.getElementById('registrationResult');
+        resultDiv.innerHTML = `
+          <div style="color: #dc3545;">
+            <h4>❌ Error</h4>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function simulateThankYouPage() {
+      log('🎭 Simulating thank-you page logic...');
+      
+      const paymentData = JSON.parse(localStorage.getItem('paymentData') || 'null');
+      const applicationId = localStorage.getItem('applicationId');
+      
+      if (!paymentData) {
+        log('❌ No payment data found - create test data first', 'error');
+        return;
+      }
+      
+      log('✅ Found payment data, displaying initial details...');
+      displayPaymentDetails(paymentData);
+      
+      if (applicationId) {
+        log('🔄 Application ID found, fetching latest data...');
+        
+        try {
+          const response = await fetch(`/api/registrations/${applicationId}`);
+          log(`📡 Response status: ${response.status} ${response.statusText}`);
+          
+          if (response.ok) {
+            const result = await response.json();
+            log('📄 Latest registration data received');
+            
+            if (result.registration) {
+              log(`🔢 SIN from server: ${result.registration.sinNumber || 'Not found'}`);
+              const latestData = {
+                ...paymentData,
+                ...result.registration,
+                sinNumber: result.registration.sinNumber
+              };
+              log('📝 Updated data for display');
+              displayPaymentDetails(latestData);
+            }
+          } else {
+            log(`⚠️ Could not fetch latest registration data: ${response.status}`);
+          }
+        } catch (error) {
+          log(`❌ Error fetching latest data: ${error.message}`, 'error');
+        }
+      } else {
+        log('⚠️ No application ID found, cannot fetch latest data');
+      }
+    }
+
+    function displayPaymentDetails(data) {
+      log(`🎨 Displaying payment details`);
+      log(`🔢 SIN Number in data: ${data.sinNumber || 'Not found'}`);
+      
+      const sinRow = data.sinNumber ? `
+        <div class="detail-row" style="background-color: #d1ecf1; padding: 10px; border-radius: 5px;">
+          <span><strong>🔢 SIN Number:</strong></span>
+          <span style="color: #003349; font-weight: bold; font-size: 18px;">${data.sinNumber}</span>
+        </div>
+      ` : `
+        <div class="detail-row" style="background-color: #f8d7da; padding: 10px; border-radius: 5px;">
+          <span><strong>🔢 SIN Number:</strong></span>
+          <span style="color: #721c24;">Not available</span>
+        </div>
+      `;
+      
+      log(`📄 SIN row HTML: ${sinRow ? 'Generated' : 'Empty'}`);
+      
+      const displayDiv = document.getElementById('paymentDisplay');
+      displayDiv.style.display = 'block';
+      displayDiv.innerHTML = `
+        <h4>💳 Payment Details</h4>
+        <div class="detail-row">
+          <span><strong>Student Name:</strong></span>
+          <span>${data.studentName}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Course:</strong></span>
+          <span>${data.course}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Program:</strong></span>
+          <span>${data.program}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Email:</strong></span>
+          <span>${data.email}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Phone:</strong></span>
+          <span>${data.phoneNumber}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Amount Paid:</strong></span>
+          <span>₹${data.paymentAmount || data.totalFee}</span>
+        </div>
+        <div class="detail-row">
+          <span><strong>Transaction ID:</strong></span>
+          <span style="color: #007bff; font-weight: bold;">${data.transactionId}</span>
+        </div>
+        ${sinRow}
+        <div class="detail-row">
+          <span><strong>Payment Time:</strong></span>
+          <span>${new Date(data.paymentTime).toLocaleString()}</span>
+        </div>
+      `;
+      
+      const resultDiv = document.getElementById('simulationResult');
+      resultDiv.innerHTML = `
+        <div class="highlight">
+          <h4>✅ Simulation Complete</h4>
+          <p>Payment details displayed above. Check console for detailed logs.</p>
+          <p><strong>SIN Status:</strong> ${data.sinNumber ? '✅ Found' : '❌ Not found'}</p>
+        </div>
+      `;
+    }
+
+    // Initialize
+    log('🚀 SIN Testing Page Loaded');
+  </script>
+</body>
+</html>

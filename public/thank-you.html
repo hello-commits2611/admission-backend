@@ -92,43 +92,117 @@
   </div>
 
   <script>
-    // Display payment details from localStorage
+    // Display payment details from localStorage and fetch latest data including SIN
+    console.log('💾 Checking localStorage data...');
     const paymentData = JSON.parse(localStorage.getItem('paymentData'));
+    const applicationId = localStorage.getItem('applicationId');
     const detailsDiv = document.getElementById('paymentDetails');
     
+    console.log('💳 Payment data from localStorage:', paymentData);
+    console.log('🆔 Application ID from localStorage:', applicationId);
+    
     if (paymentData) {
+      console.log('✅ Found payment data, displaying initial details...');
+      // First show the basic payment data
+      displayPaymentDetails(paymentData);
+      
+      // Then fetch the latest data from server to get SIN number
+      if (applicationId) {
+        console.log('🔄 Application ID found, fetching latest data...');
+        fetchLatestRegistrationData(applicationId);
+      } else {
+        console.log('⚠️ No application ID found, cannot fetch latest data');
+      }
+    } else {
+      console.log('❌ No payment data found in localStorage');
+      detailsDiv.innerHTML = '<p>No payment details found.</p>';
+    }
+    
+    function displayPaymentDetails(data) {
+      console.log('🎨 Displaying payment details with data:', data);
+      console.log('🔢 SIN Number in data:', data.sinNumber);
+      
+      const sinRow = data.sinNumber ? `
+        <div class="detail-row">
+          <span><strong>SIN Number:</strong></span>
+          <span style="color: #003349; font-weight: bold; font-size: 18px;">${data.sinNumber}</span>
+        </div>
+      ` : '';
+      
+      console.log('📄 SIN row HTML:', sinRow);
+      
       detailsDiv.innerHTML = `
         <div class="detail-row">
           <span><strong>Student Name:</strong></span>
-          <span>${paymentData.studentName}</span>
+          <span>${data.studentName}</span>
         </div>
         <div class="detail-row">
           <span><strong>Course:</strong></span>
-          <span>${paymentData.course}</span>
+          <span>${data.course}</span>
         </div>
         <div class="detail-row">
           <span><strong>Email:</strong></span>
-          <span>${paymentData.email}</span>
+          <span>${data.email}</span>
         </div>
         <div class="detail-row">
           <span><strong>Phone:</strong></span>
-          <span>${paymentData.phoneNumber}</span>
+          <span>${data.phoneNumber}</span>
         </div>
         <div class="detail-row">
           <span><strong>Amount Paid:</strong></span>
-          <span>₹${paymentData.totalFee}</span>
+          <span>₹${data.paymentAmount || data.totalFee}</span>
         </div>
         <div class="detail-row">
           <span><strong>Transaction ID:</strong></span>
-          <span style="color: #007bff; font-weight: bold;">${paymentData.transactionId}</span>
+          <span style="color: #007bff; font-weight: bold;">${data.transactionId}</span>
         </div>
+        ${sinRow}
         <div class="detail-row">
           <span><strong>Payment Time:</strong></span>
-          <span>${new Date(paymentData.paymentTime).toLocaleString()}</span>
+          <span>${new Date(data.paymentTime).toLocaleString()}</span>
         </div>
       `;
-    } else {
-      detailsDiv.innerHTML = '<p>No payment details found.</p>';
+      
+      // Update stored payment data with SIN if available
+      if (data.sinNumber) {
+        localStorage.setItem('paymentData', JSON.stringify(data));
+      }
+    }
+    
+    // Fetch latest registration data from server to get SIN number
+    async function fetchLatestRegistrationData(docId) {
+      try {
+        console.log('🔍 Fetching latest registration data for SIN...', docId);
+        
+        const response = await fetch(`/api/registrations/${docId}`);
+        console.log('📡 Response status:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          console.log('❌ Could not fetch latest registration data:', response.status);
+          return;
+        }
+        
+        const result = await response.json();
+        console.log('📄 Latest registration data:', result);
+        
+        // Update display with latest data including SIN
+        if (result.registration) {
+          console.log('🔢 SIN from server:', result.registration.sinNumber);
+          const latestData = {
+            ...paymentData,
+            ...result.registration,
+            sinNumber: result.registration.sinNumber
+          };
+          console.log('📝 Updated data for display:', latestData);
+          displayPaymentDetails(latestData);
+        } else {
+          console.log('❌ No registration data found in response');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error fetching latest data:', error);
+        // Don't show error to user, just use cached data
+      }
     }
     
     // Function to print receipt
@@ -163,12 +237,16 @@
             </div>
             <div style="display: flex; justify-content: space-between; margin: 10px 0;">
               <span><strong>Amount Paid:</strong></span>
-              <span>₹${paymentData.totalFee}</span>
+              <span>₹${paymentData.paymentAmount || paymentData.totalFee}</span>
             </div>
             <div style="display: flex; justify-content: space-between; margin: 10px 0;">
               <span><strong>Payment Time:</strong></span>
               <span>${new Date(paymentData.paymentTime).toLocaleString()}</span>
             </div>
+            ${paymentData.sinNumber ? `<div style="display: flex; justify-content: space-between; margin: 10px 0;">
+              <span><strong>SIN Number:</strong></span>
+              <span style="color: #003349; font-weight: bold;">${paymentData.sinNumber}</span>
+            </div>` : ''}
             <div style="display: flex; justify-content: space-between; margin: 10px 0; color: #28a745; font-weight: bold;">
               <span><strong>Status:</strong></span>
               <span>PAID</span>

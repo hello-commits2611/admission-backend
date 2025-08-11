@@ -10,6 +10,10 @@ const PDFDocument = require('pdfkit');
 const Razorpay = require('razorpay');
 require('dotenv').config();
 
+// Import SIN number utilities
+const { generateUniqueSIN, isEligibleForSIN } = require('./utils/sinGenerator');
+const { getExistingSINNumbers, updateRegistrationWithSIN, getEligibleRegistrationsForSIN } = require('./utils/sinDatabase');
+
 // Firebase Admin Initialization - Using environment variables for production
 let firestore, bucket;
 let firebaseInitialized = false;
@@ -446,65 +450,100 @@ app.get('/admin/view', authenticateAdmin, (req, res) => {
 app.get('/api/registrations', authenticateAdmin, async (req, res) => {
   try {
     if (!firebaseInitialized || !firestore) {
-      console.log('⚠️ Firebase not properly initialized - returning sample data for testing');
-      // Return sample data for testing when Firebase is not configured
+      console.log('⚠️ Firebase not properly initialized - reading from local storage');
+      // Read from local JSON file when Firebase is not configured
+      const fs = require('fs');
+      const path = require('path');
+      
+      const registrationsFile = path.join(__dirname, 'data', 'registrations.json');
+      let registrations = [];
+      
+      if (fs.existsSync(registrationsFile)) {
+        try {
+          const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+          const localRegistrations = JSON.parse(fileContent);
+          
+          // Transform local data to match expected format
+          registrations = localRegistrations.map(registration => {
+            // Convert ISO string to seconds for compatibility
+            const createdAtSeconds = new Date(registration.createdAt).getTime() / 1000;
+            
+            return {
+              id: registration.id,
+              studentName: registration.studentName,
+              email: registration.email,
+              phoneNumber: registration.phoneNumber,
+              program: registration.program,
+              course: registration.course,
+              aadharNumber: registration.aadharNumber,
+              dateOfBirth: registration.dateOfBirth,
+              permanentAddress: registration.permanentAddress,
+              correspondenceAddress: registration.correspondenceAddress,
+              paymentAmount: registration.paymentAmount,
+              totalFee: registration.totalFee || registration.totalCourseFee,
+              transactionId: registration.transactionId,
+              paymentStatus: registration.paymentStatus,
+              status: registration.status,
+              sinNumber: registration.sinNumber || null,
+              sinGeneratedAt: registration.sinGeneratedAt || null,
+              createdAt: { _seconds: createdAtSeconds },
+              // Individual file fields
+              aadharFile: registration.aadharFile,
+              casteFile: registration.casteFile,
+              residentialFile: registration.residentialFile,
+              incomeFile: registration.incomeFile,
+              marksheetFile: registration.marksheetFile,
+              signatureFile: registration.signatureFile,
+              // Files object for admin view
+              files: {
+                aadharFile: registration.aadharFile ? { 
+                  name: registration.aadharFile.name, 
+                  path: `uploads/${registration.aadharFile.filename}` 
+                } : null,
+                casteFile: registration.casteFile ? { 
+                  name: registration.casteFile.name, 
+                  path: `uploads/${registration.casteFile.filename}` 
+                } : null,
+                residentialFile: registration.residentialFile ? { 
+                  name: registration.residentialFile.name, 
+                  path: `uploads/${registration.residentialFile.filename}` 
+                } : null,
+                incomeFile: registration.incomeFile ? { 
+                  name: registration.incomeFile.name, 
+                  path: `uploads/${registration.incomeFile.filename}` 
+                } : null,
+                marksheetFile: registration.marksheetFile ? { 
+                  name: registration.marksheetFile.name, 
+                  path: `uploads/${registration.marksheetFile.filename}` 
+                } : null,
+                signatureFile: registration.signatureFile ? { 
+                  name: registration.signatureFile.name, 
+                  path: `uploads/${registration.signatureFile.filename}` 
+                } : null
+              }
+            };
+          });
+          
+          console.log(`📁 Found ${registrations.length} registrations in local storage`);
+        } catch (error) {
+          console.error('Error reading local registrations file:', error);
+          registrations = [];
+        }
+      } else {
+        console.log('No local registrations file found');
+      }
+      
+      // Sort by creation date (newest first)
+      registrations.sort((a, b) => b.createdAt._seconds - a.createdAt._seconds);
+      
       return res.json({
-        registrations: [
-          {
-            id: 'sample-1',
-            studentName: 'Sample Student 1',
-            email: 'student1@example.com',
-            phoneNumber: '1234567890',
-            program: 'polytechnic',
-            course: 'computer_science_engineering',
-            aadharNumber: '1234-5678-9012',
-            dateOfBirth: '2000-01-01',
-            permanentAddress: 'Sample Address 1',
-            correspondenceAddress: 'Sample Address 1',
-            paymentAmount: '5000',
-            totalFee: '5500',
-            transactionId: 'TXN123456789',
-            status: 'paid',
-            createdAt: { _seconds: Date.now() / 1000 },
-            aadharFile: { name: 'aadhar.pdf', path: 'uploads/sample-aadhar.pdf' },
-            marksheetFile: { name: 'marksheet.pdf', path: 'uploads/sample-marksheet.pdf' },
-            signatureFile: { name: 'signature.jpg', path: 'uploads/sample-signature.jpg' },
-            files: {
-              aadharFile: { name: 'aadhar.pdf', path: 'uploads/sample-aadhar.pdf' },
-              marksheetFile: { name: 'marksheet.pdf', path: 'uploads/sample-marksheet.pdf' },
-              signatureFile: { name: 'signature.jpg', path: 'uploads/sample-signature.jpg' }
-            }
-          },
-          {
-            id: 'sample-2', 
-            studentName: 'Sample Student 2',
-            email: 'student2@example.com',
-            phoneNumber: '0987654321',
-            program: 'ug',
-            course: 'bca',
-            aadharNumber: '9876-5432-1098',
-            dateOfBirth: '1999-12-31',
-            permanentAddress: 'Sample Address 2',
-            correspondenceAddress: 'Sample Address 2', 
-            paymentAmount: '10000',
-            totalFee: '11000',
-            transactionId: null,
-            status: 'pending',
-            createdAt: { _seconds: (Date.now() - 86400000) / 1000 },
-            aadharFile: { name: 'aadhar2.pdf', path: 'uploads/sample-aadhar2.pdf' },
-            marksheetFile: { name: 'marksheet2.pdf', path: 'uploads/sample-marksheet2.pdf' },
-            files: {
-              aadharFile: { name: 'aadhar2.pdf', path: 'uploads/sample-aadhar2.pdf' },
-              marksheetFile: { name: 'marksheet2.pdf', path: 'uploads/sample-marksheet2.pdf' }
-            }
-          }
-        ],
+        registrations,
         metadata: {
-          count: 2,
+          count: registrations.length,
           hasMore: false,
           limit: 100,
           offset: 0,
-          note: 'Sample data - Firebase not configured'
+          note: 'Data from local storage - Firebase not configured'
         }
       });
     }
@@ -552,8 +591,10 @@ app.get('/api/registrations', authenticateAdmin, async (req, res) => {
         transactionId: data.transactionId,
         paymentStatus: data.paymentStatus,
         status: data.status,
+        sinNumber: data.sinNumber || null,
+        sinGeneratedAt: data.sinGeneratedAt || null,
         createdAt: data.createdAt,
-        // Include individual file fields for direct access
+        // Include individual file fields
         aadharFile: data.aadharFile || null,
         casteFile: data.casteFile || null,
         residentialFile: data.residentialFile || null,
@@ -596,6 +637,86 @@ app.get('/api/registrations', authenticateAdmin, async (req, res) => {
   }
 });
 
+// API endpoint to get single registration by ID (public)
+app.get('/api/registrations/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`📄 Fetching registration ${id}`);
+    
+    let registration = null;
+    
+    // Try Firebase first if initialized
+    if (firebaseInitialized && firestore) {
+      try {
+        const doc = await firestore.collection('registrations').doc(id).get();
+        if (doc.exists) {
+          const data = doc.data();
+          registration = {
+            id: doc.id,
+            ...data,
+            // Convert Firestore timestamp to readable format for frontend (safe conversion)
+            createdAt: data.createdAt ? (
+              typeof data.createdAt.toDate === 'function' 
+                ? data.createdAt.toDate().toISOString() 
+                : data.createdAt
+            ) : null,
+            sinGeneratedAt: data.sinGeneratedAt ? (
+              typeof data.sinGeneratedAt.toDate === 'function' 
+                ? data.sinGeneratedAt.toDate().toISOString() 
+                : data.sinGeneratedAt
+            ) : null
+          };
+          console.log(`✅ Found registration in Firebase: ${id}`);
+        }
+      } catch (firebaseError) {
+        console.error('❌ Firebase fetch failed:', firebaseError.message);
+        console.log('📁 Falling back to local storage...');
+      }
+    }
+    
+    // If not found in Firebase or Firebase not available, check local storage
+    if (!registration) {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const registrationsFile = path.join(__dirname, 'data', 'registrations.json');
+      
+      if (fs.existsSync(registrationsFile)) {
+        try {
+          const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+          const registrations = JSON.parse(fileContent);
+          
+          registration = registrations.find(reg => reg.id === id);
+          if (registration) {
+            console.log(`✅ Found registration in local storage: ${id}`);
+          }
+        } catch (error) {
+          console.error('❌ Error reading local storage:', error);
+        }
+      }
+    }
+    
+    if (registration) {
+      res.json({
+        success: true,
+        registration
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Registration not found'
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error fetching registration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch registration',
+      details: error.message
+    });
+  }
+});
+
 // API endpoint to update payment status (public)
 app.post('/api/registrations/:id/payment', async (req, res) => {
   try {
@@ -604,32 +725,118 @@ app.post('/api/registrations/:id/payment', async (req, res) => {
     
     console.log(`💳 Updating payment status for registration ${id} with transaction ${transactionId}`);
     
-    if (!firebaseInitialized || !firestore) {
-      console.error('❌ Firebase not initialized');
-      return res.status(500).json({
-        success: false,
-        error: 'Firebase not properly configured. Please check server configuration.',
-        details: 'Firebase Admin SDK not initialized'
-      });
+    let success = false;
+    
+    // Try Firebase first if initialized
+    if (firebaseInitialized && firestore) {
+      try {
+        // Get the current registration data to check if SIN should be generated
+        const registrationDoc = await firestore.collection('registrations').doc(id).get();
+        const registrationData = registrationDoc.data();
+        
+        let updateData = {
+          transactionId: transactionId,
+          paymentStatus: paymentStatus,
+          paymentTime: admin.firestore.Timestamp.fromDate(new Date(paymentTime)),
+          status: 'paid',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Generate SIN number if eligible and not already assigned
+        if (!registrationData.sinNumber && registrationData) {
+          const updatedRegistrationData = { ...registrationData, ...updateData, transactionId };
+          
+          if (isEligibleForSIN(updatedRegistrationData)) {
+            console.log('🔢 Generating SIN number for newly paid registration');
+            try {
+              const existingSINs = await getExistingSINNumbers(firestore, firebaseInitialized);
+              const sinNumber = generateUniqueSIN(registrationData.program, registrationData.course, existingSINs);
+              updateData.sinNumber = sinNumber;
+              updateData.sinGeneratedAt = admin.firestore.FieldValue.serverTimestamp();
+              console.log(`✅ Generated SIN number: ${sinNumber}`);
+            } catch (sinError) {
+              console.error('❌ Error generating SIN number:', sinError);
+            }
+          }
+        }
+        
+        // Update the document with payment information and possibly SIN
+        await firestore.collection('registrations').doc(id).update(updateData);
+        
+        console.log(`✅ Payment status updated successfully in Firebase for ${id}`);
+        success = true;
+      } catch (firebaseError) {
+        console.error('❌ Firebase payment update failed:', firebaseError.message);
+        console.log('📁 Falling back to local storage update...');
+      }
     }
     
-    // Update the document with payment information
-    await firestore.collection('registrations').doc(id).update({
-      transactionId: transactionId,
-      paymentStatus: paymentStatus,
-      paymentTime: admin.firestore.Timestamp.fromDate(new Date(paymentTime)),
-      status: 'paid',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    });
+    // If Firebase failed or not initialized, update local storage
+    if (!success) {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const registrationsFile = path.join(__dirname, 'data', 'registrations.json');
+      
+      if (fs.existsSync(registrationsFile)) {
+        try {
+          const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+          let registrations = JSON.parse(fileContent);
+          
+          // Find and update the registration
+          const registrationIndex = registrations.findIndex(reg => reg.id === id);
+          
+          if (registrationIndex !== -1) {
+            registrations[registrationIndex].transactionId = transactionId;
+            registrations[registrationIndex].paymentStatus = paymentStatus;
+            registrations[registrationIndex].status = 'paid';
+            registrations[registrationIndex].updatedAt = new Date().toISOString();
+            
+            // Generate SIN number if eligible and not already assigned
+            if (!registrations[registrationIndex].sinNumber) {
+              const updatedRegistrationData = { ...registrations[registrationIndex] };
+              
+              if (isEligibleForSIN(updatedRegistrationData)) {
+                console.log('🔢 Generating SIN number for newly paid registration (local storage)');
+                try {
+                  const existingSINs = await getExistingSINNumbers(firestore, firebaseInitialized);
+                  const sinNumber = generateUniqueSIN(registrations[registrationIndex].program, registrations[registrationIndex].course, existingSINs);
+                  registrations[registrationIndex].sinNumber = sinNumber;
+                  registrations[registrationIndex].sinGeneratedAt = new Date().toISOString();
+                  console.log(`✅ Generated SIN number: ${sinNumber}`);
+                } catch (sinError) {
+                  console.error('❌ Error generating SIN number:', sinError);
+                }
+              }
+            }
+            
+            // Save back to file
+            fs.writeFileSync(registrationsFile, JSON.stringify(registrations, null, 2));
+            console.log(`✅ Payment status updated successfully in local storage for ${id}`);
+            success = true;
+          } else {
+            console.error(`❌ Registration ${id} not found in local storage`);
+          }
+        } catch (error) {
+          console.error('❌ Error updating local storage:', error);
+        }
+      }
+    }
     
-    console.log(`✅ Payment status updated successfully for ${id}`);
-    
-    res.json({
-      success: true,
-      message: 'Payment status updated successfully',
-      id: id,
-      transactionId: transactionId
-    });
+    if (success) {
+      res.json({
+        success: true,
+        message: 'Payment status updated successfully',
+        id: id,
+        transactionId: transactionId
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Registration not found or update failed',
+        id: id
+      });
+    }
   } catch (error) {
     console.error('❌ Error updating payment status:', error);
     res.status(500).json({
@@ -643,17 +850,8 @@ app.post('/api/registrations/:id/payment', async (req, res) => {
 // API endpoint to save registration data (public)
 app.post('/api/registrations', async (req, res) => {
   try {
-    console.log('💾 Saving registration data to Firebase...');
+    console.log('💾 Saving registration data...');
     console.log('Received data:', JSON.stringify(req.body, null, 2));
-    
-    if (!firebaseInitialized || !firestore) {
-      console.error('❌ Firebase not initialized');
-      return res.status(500).json({
-        success: false,
-        error: 'Firebase not properly configured. Please check server configuration.',
-        details: 'Firebase Admin SDK not initialized'
-      });
-    }
     
     const registrationData = {
       program: req.body.program,
@@ -666,7 +864,7 @@ app.post('/api/registrations', async (req, res) => {
       permanentAddress: req.body.permanentAddress,
       correspondenceAddress: req.body.correspondenceAddress,
       paymentAmount: req.body.paymentAmount,
-      totalFee: req.body.totalFee,
+      totalFee: req.body.totalFee || req.body.totalCourseFee,
       transactionId: req.body.transactionId || null,
       paymentStatus: req.body.transactionId ? 'paid' : 'pending',
       razorpayOrderId: req.body.razorpayOrderId || null,
@@ -679,28 +877,186 @@ app.post('/api/registrations', async (req, res) => {
       marksheetFile: req.body.marksheetFile || null,
       signatureFile: req.body.signatureFile || null,
       status: req.body.transactionId ? 'paid' : 'pending',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
-    // Save to Firestore
-    const docRef = await firestore.collection('registrations').add(registrationData);
-    console.log('✅ Registration saved successfully with ID:', docRef.id);
+    let docId;
+    let success = false;
+    
+    // Generate SIN number if eligible (paid with transaction ID)
+    let sinNumber = null;
+    if (isEligibleForSIN(registrationData)) {
+      console.log('🔢 Student is eligible for SIN number generation');
+      try {
+        // Get existing SIN numbers to ensure uniqueness
+        const existingSINs = await getExistingSINNumbers(firestore, firebaseInitialized);
+        
+        // Generate unique SIN number
+        sinNumber = generateUniqueSIN(registrationData.program, registrationData.course, existingSINs);
+        registrationData.sinNumber = sinNumber;
+        registrationData.sinGeneratedAt = new Date().toISOString();
+        
+        console.log(`✅ Generated SIN number for student: ${sinNumber}`);
+      } catch (sinError) {
+        console.error('❌ Error generating SIN number:', sinError);
+        // Continue without SIN - can be generated later
+      }
+    } else {
+      console.log('ℹ️ Student not eligible for SIN number (payment not completed or no transaction ID)');
+    }
+
+    // Try Firebase first if initialized
+    if (firebaseInitialized && firestore) {
+      try {
+        console.log('💾 Saving to Firebase...');
+        const modifiedData = {
+          ...registrationData,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        
+        const docRef = await firestore.collection('registrations').add(modifiedData);
+        docId = docRef.id;
+        success = true;
+        console.log('✅ Registration saved successfully to Firebase with ID:', docId);
+      } catch (firebaseError) {
+        console.error('❌ Firebase save failed:', firebaseError.message);
+        console.log('📁 Falling back to local storage...');
+        // Continue to local storage fallback
+      }
+    }
+    
+    // If Firebase failed or not initialized, use local JSON storage
+    if (!success) {
+      console.log('💾 Saving to local storage (Firebase not available)...');
+      const fs = require('fs');
+      const path = require('path');
+      
+      // Create data directory if it doesn't exist
+      const dataDir = path.join(__dirname, 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      
+      // Generate unique ID
+      docId = 'reg_' + Date.now() + '_' + Math.round(Math.random() * 1E9);
+      
+      // Read existing registrations or create empty array
+      const registrationsFile = path.join(dataDir, 'registrations.json');
+      let registrations = [];
+      
+      if (fs.existsSync(registrationsFile)) {
+        try {
+          const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+          registrations = JSON.parse(fileContent);
+        } catch (error) {
+          console.warn('Could not read existing registrations file, starting fresh');
+          registrations = [];
+        }
+      }
+      
+      // Add new registration
+      const newRegistration = {
+        id: docId,
+        ...registrationData
+      };
+      
+      registrations.push(newRegistration);
+      
+      // Save back to file
+      fs.writeFileSync(registrationsFile, JSON.stringify(registrations, null, 2));
+      console.log('✅ Registration saved successfully to local storage with ID:', docId);
+      success = true;
+    }
     
     res.status(201).json({
       success: true,
-      message: 'Registration saved successfully to Firebase',
-      id: docRef.id,
+      message: `Registration saved successfully ${firebaseInitialized ? 'to Firebase' : 'locally'}`,
+      id: docId,
       data: {
-        id: docRef.id,
+        id: docId,
         ...registrationData
       }
     });
+    
   } catch (error) {
-    console.error('❌ Error saving registration to Firebase:', error);
+    console.error('❌ Error saving registration:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to save registration to Firebase',
+      error: 'Failed to save registration',
+      details: error.message
+    });
+  }
+});
+
+// Admin endpoint to generate SIN numbers for existing registrations
+app.post('/admin/generate-sins', authenticateAdmin, async (req, res) => {
+  try {
+    console.log('🔢 Starting bulk SIN generation for existing registrations...');
+    
+    // Get all registrations eligible for SIN generation
+    const eligibleRegistrations = await getEligibleRegistrationsForSIN(firestore, firebaseInitialized);
+    
+    if (eligibleRegistrations.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No registrations found that are eligible for SIN generation',
+        processed: 0,
+        generated: 0
+      });
+    }
+    
+    console.log(`📊 Found ${eligibleRegistrations.length} registrations eligible for SIN generation`);
+    
+    // Get existing SIN numbers for uniqueness check
+    const existingSINs = await getExistingSINNumbers(firestore, firebaseInitialized);
+    
+    let processed = 0;
+    let generated = 0;
+    const errors = [];
+    
+    for (const registration of eligibleRegistrations) {
+      try {
+        processed++;
+        
+        // Generate unique SIN number
+        const sinNumber = generateUniqueSIN(registration.program, registration.course, existingSINs);
+        
+        // Add to existing SINs list to prevent duplicates in this batch
+        existingSINs.push(sinNumber);
+        
+        // Update the registration with SIN number
+        const updateSuccess = await updateRegistrationWithSIN(registration.id, sinNumber, firestore, firebaseInitialized);
+        
+        if (updateSuccess) {
+          generated++;
+          console.log(`✅ Generated SIN ${sinNumber} for student ${registration.studentName} (${registration.id})`);
+        } else {
+          errors.push(`Failed to update registration ${registration.id}`);
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error generating SIN for registration ${registration.id}:`, error);
+        errors.push(`Error processing registration ${registration.id}: ${error.message}`);
+      }
+    }
+    
+    console.log(`🎉 SIN generation complete: ${generated}/${processed} registrations updated`);
+    
+    res.json({
+      success: true,
+      message: `SIN generation completed`,
+      processed,
+      generated,
+      errors: errors.length > 0 ? errors : undefined
+    });
+    
+  } catch (error) {
+    console.error('❌ Error in bulk SIN generation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate SIN numbers',
       details: error.message
     });
   }
@@ -746,9 +1102,124 @@ app.post('/api/test-firebase', async (req, res) => {
   }
 });
 
+// Test endpoint to manually generate SIN (for debugging)
+app.post('/api/test-generate-sin', async (req, res) => {
+  try {
+    const { registrationId } = req.body;
+    
+    if (!registrationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Registration ID is required'
+      });
+    }
+    
+    console.log(`🧪 Test SIN generation for registration: ${registrationId}`);
+    
+    let registration = null;
+    
+    // Try Firebase first
+    if (firebaseInitialized && firestore) {
+      try {
+        const doc = await firestore.collection('registrations').doc(registrationId).get();
+        if (doc.exists) {
+          registration = { id: doc.id, ...doc.data() };
+        }
+      } catch (firebaseError) {
+        console.log('Firebase not available, checking local storage...');
+      }
+    }
+    
+    // If not found in Firebase, check local storage
+    if (!registration) {
+      const fs = require('fs');
+      const path = require('path');
+      const registrationsFile = path.join(__dirname, 'data', 'registrations.json');
+      
+      if (fs.existsSync(registrationsFile)) {
+        const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+        const registrations = JSON.parse(fileContent);
+        registration = registrations.find(reg => reg.id === registrationId);
+      }
+    }
+    
+    if (!registration) {
+      return res.status(404).json({
+        success: false,
+        error: 'Registration not found'
+      });
+    }
+    
+    // Check if already has SIN
+    if (registration.sinNumber) {
+      return res.json({
+        success: true,
+        message: 'Registration already has SIN number',
+        sinNumber: registration.sinNumber,
+        alreadyExists: true
+      });
+    }
+    
+    // Check eligibility
+    const isEligible = isEligibleForSIN(registration);
+    console.log(`📊 SIN eligibility for ${registrationId}: ${isEligible}`);
+    
+    if (!isEligible) {
+      return res.json({
+        success: false,
+        error: 'Registration is not eligible for SIN generation',
+        eligibilityCheck: {
+          hasTransactionId: !!(registration.transactionId && registration.transactionId.trim() !== ''),
+          paymentStatus: registration.paymentStatus,
+          paymentAmount: registration.paymentAmount || 0
+        }
+      });
+    }
+    
+    // Generate SIN
+    try {
+      const existingSINs = await getExistingSINNumbers(firestore, firebaseInitialized);
+      const sinNumber = generateUniqueSIN(registration.program, registration.course, existingSINs);
+      
+      // Update registration with SIN
+      const updateSuccess = await updateRegistrationWithSIN(registrationId, sinNumber, firestore, firebaseInitialized);
+      
+      if (updateSuccess) {
+        res.json({
+          success: true,
+          message: 'SIN number generated successfully',
+          sinNumber: sinNumber,
+          registrationId: registrationId
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to update registration with SIN number'
+        });
+      }
+      
+    } catch (sinError) {
+      console.error('Error generating SIN:', sinError);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate SIN number',
+        details: sinError.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error in test SIN generation:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
 // Generate transaction slip endpoint
 app.post('/api/generate-receipt', (req, res) => {
-  const { transactionId, studentName, course, amount, paymentTime } = req.body;
+  const { transactionId, studentName, course, amount, paymentTime, sinNumber } = req.body;
   
   // Generate receipt HTML
   const receiptHTML = `
@@ -793,6 +1264,11 @@ app.post('/api/generate-receipt', (req, res) => {
           <span><strong>Payment Time:</strong></span>
           <span>${new Date().toLocaleString()}</span>
         </div>
+        ${sinNumber ? `
+        <div class="detail-row" style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; border-left: 4px solid #007bff;">
+          <span><strong>SIN Number:</strong></span>
+          <span style="font-weight: bold; color: #007bff;">${sinNumber}</span>
+        </div>` : ''}
         <div class="detail-row success">
           <span><strong>Status:</strong></span>
           <span>PAID</span>
@@ -808,6 +1284,102 @@ app.post('/api/generate-receipt', (req, res) => {
   `;
   
   res.send(receiptHTML);
+});
+
+// Admin endpoint to delete a registration
+app.delete('/admin/registrations/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`🗑️ Admin deleting registration: ${id}`);
+    
+    let success = false;
+    let foundRegistration = null;
+    
+    // Try Firebase first if initialized
+    if (firebaseInitialized && firestore) {
+      try {
+        // Check if registration exists first
+        const doc = await firestore.collection('registrations').doc(id).get();
+        if (doc.exists) {
+          foundRegistration = { id: doc.id, ...doc.data() };
+          
+          // Delete from Firebase
+          await firestore.collection('registrations').doc(id).delete();
+          console.log(`✅ Registration ${id} deleted from Firebase`);
+          success = true;
+        }
+      } catch (firebaseError) {
+        console.error('❌ Firebase delete failed:', firebaseError.message);
+        console.log('📁 Falling back to local storage...');
+      }
+    }
+    
+    // If not found in Firebase or Firebase not available, try local storage
+    if (!success) {
+      const fs = require('fs');
+      const path = require('path');
+      
+      const registrationsFile = path.join(__dirname, 'data', 'registrations.json');
+      
+      if (fs.existsSync(registrationsFile)) {
+        try {
+          const fileContent = fs.readFileSync(registrationsFile, 'utf8');
+          let registrations = JSON.parse(fileContent);
+          
+          // Find registration to delete
+          const registrationIndex = registrations.findIndex(reg => reg.id === id);
+          
+          if (registrationIndex !== -1) {
+            foundRegistration = registrations[registrationIndex];
+            
+            // Remove from array
+            registrations.splice(registrationIndex, 1);
+            
+            // Write back to file
+            fs.writeFileSync(registrationsFile, JSON.stringify(registrations, null, 2));
+            console.log(`✅ Registration ${id} deleted from local storage`);
+            success = true;
+          }
+        } catch (error) {
+          console.error('❌ Error deleting from local storage:', error);
+          return res.status(500).json({
+            success: false,
+            error: 'Failed to delete from local storage',
+            details: error.message
+          });
+        }
+      }
+    }
+    
+    if (success && foundRegistration) {
+      // Optionally, also try to delete associated files
+      // For now, we'll just delete the database record
+      
+      res.json({
+        success: true,
+        message: `Registration for "${foundRegistration.studentName || 'Unknown'}" deleted successfully`,
+        deletedRegistration: {
+          id: foundRegistration.id,
+          studentName: foundRegistration.studentName,
+          program: foundRegistration.program,
+          course: foundRegistration.course
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Registration not found'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error deleting registration:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete registration',
+      details: error.message
+    });
+  }
 });
 
 // Health check endpoints for Render monitoring

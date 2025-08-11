@@ -3,43 +3,101 @@
 <head>
   <title>Admin View - GMCP</title>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f5f5f5;
-    }
-    .header {
-      background-color: #003349;
-      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
       padding: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 25px;
       text-align: center;
+      margin-bottom: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('DSC03116.JPG') center/cover;
+      opacity: 0.1;
+      z-index: 0;
+    }
+
+    .header * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
       margin-bottom: 20px;
-      border-radius: 5px;
+      flex-wrap: wrap;
     }
+
+    .logout-btn, .refresh-btn {
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     .logout-btn {
-      background-color: #dc3545;
+      background: linear-gradient(135deg, #ff6b6b, #ee5a52);
       color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      float: right;
-      margin-bottom: 10px;
     }
+
     .logout-btn:hover {
-      background-color: #c82333;
+      background: linear-gradient(135deg, #ee5a52, #dc3545);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(238, 90, 82, 0.4);
     }
+
     .refresh-btn {
-      background-color: #28a745;
+      background: linear-gradient(135deg, #51cf66, #40c057);
       color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-bottom: 10px;
     }
+
     .refresh-btn:hover {
-      background-color: #218838;
+      background: linear-gradient(135deg, #40c057, #37b24d);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(64, 192, 87, 0.4);
     }
     table {
       width: 100%;
@@ -138,15 +196,42 @@
     .clear-filters-btn:hover {
       background-color: #5a6268;
     }
+    .export-btn {
+      background-color: #17a2b8;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    .export-btn:hover {
+      background-color: #138496;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 10px;
+      margin-top: 5px;
+    }
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
     .stats-container {
       background: white;
       padding: 15px;
       margin-bottom: 20px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       display: flex;
       gap: 20px;
       flex-wrap: wrap;
+      border: 1px solid rgba(102, 126, 234, 0.2);
     }
     .stat-item {
       text-align: center;
@@ -166,6 +251,176 @@
       background-color: #fff3cd;
       color: #856404;
     }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+      .header p {
+        font-size: 1rem;
+      }
+      body {
+        padding: 10px;
+      }
+    }
+
+    @media (max-width: 992px) {
+      .search-filter-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-box {
+        min-width: auto;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .filter-select {
+        min-width: auto;
+        width: 100%;
+        margin-bottom: 10px;
+      }
+      .action-buttons {
+        justify-content: center;
+      }
+      .stats-container {
+        justify-content: center;
+      }
+      .stat-item {
+        min-width: 140px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 20px 15px;
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+      }
+      .header p {
+        font-size: 0.9rem;
+      }
+      body {
+        padding: 5px;
+      }
+      .logout-btn, .refresh-btn {
+        padding: 10px 16px;
+        font-size: 12px;
+        margin-bottom: 10px;
+        width: 100%;
+      }
+      .action-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-filter-container {
+        padding: 15px;
+      }
+      .clear-filters-btn, .export-btn {
+        width: 100%;
+        margin: 5px 0;
+      }
+      .export-btn {
+        margin-left: 0;
+      }
+      table {
+        font-size: 10px;
+        overflow-x: auto;
+        display: block;
+        white-space: nowrap;
+      }
+      thead, tbody, th, td, tr {
+        display: block;
+      }
+      thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+      tr {
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        background: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      td {
+        border: none;
+        position: relative;
+        padding: 8px 8px 8px 30%;
+        white-space: normal;
+      }
+      td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 8px;
+        width: 25%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        color: #333;
+      }
+      .stats-container {
+        padding: 10px;
+      }
+      .stat-item {
+        min-width: 100px;
+        padding: 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 1.2rem;
+      }
+      .header p {
+        font-size: 0.8rem;
+      }
+      .search-filter-container {
+        padding: 10px;
+      }
+      .filter-label {
+        font-size: 12px;
+      }
+      .search-box, .filter-select {
+        font-size: 12px;
+        padding: 8px;
+      }
+      .clear-filters-btn, .export-btn {
+        font-size: 12px;
+        padding: 8px 12px;
+      }
+      .stat-item {
+        min-width: 80px;
+        padding: 6px;
+      }
+      .stat-item div:first-child {
+        font-size: 18px !important;
+      }
+      .stat-item div:last-child {
+        font-size: 11px;
+      }
+      td {
+        font-size: 11px;
+        padding: 6px 6px 6px 28%;
+      }
+      td:before {
+        font-size: 10px;
+        width: 22%;
+      }
+    }
+
+    /* Table wrapper for horizontal scrolling on larger tables */
+    .table-wrapper {
+      overflow-x: auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
   </style>
   <!-- Admin view uses secure backend API - No client Firebase SDK needed -->
 
@@ -176,9 +431,10 @@
     <p>Student Registration Management</p>
   </div>
   
-  <button class="logout-btn" onclick="logout()">Logout</button>
-  <button class="refresh-btn" onclick="loadData()">Refresh Data</button>
-  <div style="clear: both;"></div>
+  <div class="action-buttons">
+    <button class="refresh-btn" onclick="loadData()">🔄 Refresh Data</button>
+    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+  </div>
   
   <!-- Statistics Container -->
   <div class="stats-container" id="statsContainer" style="display: none;">
@@ -198,7 +454,7 @@
   
   <!-- Search and Filter Container -->
   <div class="search-filter-container" id="searchFilterContainer" style="display: none;">
-    <input type="text" id="searchInput" class="search-box" placeholder="Search by student name, email, phone, or Aadhar number..." onkeyup="filterTable()">
+    <input type="text" id="searchInput" class="search-box" placeholder="Search by student name, email, phone, Aadhar number, transaction ID, or SIN number..." onkeyup="filterTable()">
     
     <label class="filter-label">Program:</label>
     <select id="programFilter" class="filter-select" onchange="filterTable()">
@@ -213,10 +469,13 @@
     <select id="paymentFilter" class="filter-select" onchange="filterTable()">
       <option value="">All Status</option>
       <option value="paid">Paid</option>
+      <option value="paid-due">Paid/Due</option>
       <option value="pending">Pending</option>
+      <option value="failed">Failed</option>
     </select>
     
     <button class="clear-filters-btn" onclick="clearFilters()">Clear Filters</button>
+    <button class="export-btn" onclick="exportToExcel()">📊 Export to Excel</button>
   </div>
   
   <div id="loading" class="loading">Loading student data...</div>
@@ -234,9 +493,11 @@
         <th>Date of Birth</th>
         <th>Permanent Address</th>
         <th>Correspondence Address</th>
+        <th>Total Course Fee</th>
         <th>Payment Amount</th>
-        <th>Total Fee</th>
+        <th>Due Amount</th>
         <th>Transaction ID</th>
+        <th>SIN Number</th>
         <th>Payment Status</th>
         <th>Submission Date</th>
 <th>Documents</th>
@@ -327,7 +588,7 @@
         console.log(`📊 Processing ${registrations.length} registrations...`);
         
         if (registrations.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="17" style="text-align: center; padding: 20px;">No registrations found</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="19" style="text-align: center; padding: 20px;">No registrations found</td></tr>';
           console.log('ℹ️ No registrations found');
         } else {
           registrations.forEach((item, index) => {
@@ -350,10 +611,28 @@
               }
             }
             
-            // Payment status
-            const paymentStatus = item.transactionId ? 
-              `<span class="paid">PAID</span>` : 
-              `<span class="pending">PENDING</span>`;
+            // Payment status - calculate based on payment amounts
+            let paymentStatus;
+            const totalFee = item.totalFee || item.totalCourseFee || 0;
+            const paymentAmount = item.paymentAmount || 0;
+            const dueAmount = calculateDueAmount(item);
+            
+            if (item.paymentStatus === 'Failed' || (item.transactionId && item.status === 'failed')) {
+              // Payment explicitly failed
+              paymentStatus = `<span style="color: #dc3545; font-weight: bold;">FAILED</span>`;
+            } else if (!item.transactionId || paymentAmount === 0) {
+              // No payment made yet
+              paymentStatus = `<span class="pending">PENDING</span>`;
+            } else if (paymentAmount >= totalFee || dueAmount === 0) {
+              // Full payment made (100% payment)
+              paymentStatus = `<span class="paid">PAID</span>`;
+            } else if (paymentAmount > 0 && paymentAmount < totalFee) {
+              // Partial payment made (still has due amount)
+              paymentStatus = `<span style="color: #fd7e14; font-weight: bold;">PAID/DUE</span>`;
+            } else {
+              // Default fallback
+              paymentStatus = `<span class="pending">PENDING</span>`;
+            }
             
             // Documents list - handle both old and new formats
             const documents = [];
@@ -413,23 +692,25 @@
             }
             
             row.innerHTML = `
-              <td>${index + 1}</td>
-              <td>${item.program || 'N/A'}</td>
-              <td>${item.course || 'N/A'}</td>
-              <td>${item.studentName || 'N/A'}</td>
-              <td>${item.email || 'N/A'}</td>
-              <td>${item.phoneNumber || 'N/A'}</td>
-              <td>${item.aadharNumber || 'N/A'}</td>
-              <td>${item.dateOfBirth || 'N/A'}</td>
-              <td>${item.permanentAddress || 'N/A'}</td>
-              <td>${item.correspondenceAddress || 'N/A'}</td>
-              <td>₹${item.paymentAmount || 'N/A'}</td>
-              <td>₹${item.totalFee || 'N/A'}</td>
-              <td>${item.transactionId || 'N/A'}</td>
-              <td>${paymentStatus}</td>
-              <td>${submissionDate}</td>
-              <td>${documents.join(', ') || 'None'}</td>
-              <td class="actions-cell">${actionLinks || 'No files'}</td>
+              <td data-label="S.No">${index + 1}</td>
+              <td data-label="Program">${item.program || 'N/A'}</td>
+              <td data-label="Course">${item.course || 'N/A'}</td>
+              <td data-label="Student Name">${item.studentName || 'N/A'}</td>
+              <td data-label="Email">${item.email || 'N/A'}</td>
+              <td data-label="Phone">${item.phoneNumber || 'N/A'}</td>
+              <td data-label="Aadhar Number">${item.aadharNumber || 'N/A'}</td>
+              <td data-label="Date of Birth">${item.dateOfBirth || 'N/A'}</td>
+              <td data-label="Permanent Address">${item.permanentAddress || 'N/A'}</td>
+              <td data-label="Correspondence Address">${item.correspondenceAddress || 'N/A'}</td>
+              <td data-label="Total Course Fee">₹${item.totalFee || item.totalCourseFee || 'N/A'}</td>
+              <td data-label="Payment Amount">₹${item.paymentAmount || 'N/A'}</td>
+              <td data-label="Due Amount">₹${calculateDueAmount(item)}</td>
+              <td data-label="Transaction ID">${item.transactionId || 'N/A'}</td>
+              <td data-label="SIN Number" style="font-weight: bold; color: #003349;">${item.sinNumber || 'Not Generated'}</td>
+              <td data-label="Payment Status">${paymentStatus}</td>
+              <td data-label="Submission Date">${submissionDate}</td>
+              <td data-label="Documents">${documents.join(', ') || 'None'}</td>
+              <td data-label="Actions" class="actions-cell">${actionLinks || 'No files'}<button class="delete-btn" onclick="deleteRegistration('${item.id || item.registrationId || ''}', '${(item.studentName || 'Unknown').replace(/'/g, "\\'")}'')" title="Delete this registration">❌ Delete</button></td>
             `;
             
             tbody.appendChild(row);
@@ -470,6 +751,14 @@
       }
     }
     
+    // Function to calculate due amount
+    function calculateDueAmount(item) {
+      const totalFee = item.totalFee || item.totalCourseFee || 0;
+      const paymentAmount = item.paymentAmount || 0;
+      const dueAmount = Math.max(0, totalFee - paymentAmount);
+      return dueAmount || 'N/A';
+    }
+    
     // Function to update statistics
     function updateStatistics(data) {
       const totalCount = data.length;
@@ -497,22 +786,36 @@
       
       // Filter the original data
       let filteredData = window.originalRegistrations.filter(item => {
-        // Search filter
+        // Search filter - include SIN numbers in search
         const searchMatch = !searchTerm || 
           (item.studentName && item.studentName.toLowerCase().includes(searchTerm)) ||
           (item.email && item.email.toLowerCase().includes(searchTerm)) ||
           (item.phoneNumber && item.phoneNumber.toLowerCase().includes(searchTerm)) ||
           (item.aadharNumber && item.aadharNumber.toLowerCase().includes(searchTerm)) ||
-          (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm));
+          (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm)) ||
+          (item.sinNumber && item.sinNumber.toLowerCase().includes(searchTerm));
         
         // Program filter
         const programMatch = !programFilter || 
           (item.program && item.program.toLowerCase() === programFilter);
         
-        // Payment status filter
-        const paymentMatch = !paymentFilter || 
-          (paymentFilter === 'paid' && item.transactionId) ||
-          (paymentFilter === 'pending' && !item.transactionId);
+        // Payment status filter - use same logic as display
+        let itemPaymentStatus = 'pending'; // default
+        const totalFee = item.totalFee || item.totalCourseFee || 0;
+        const paymentAmount = item.paymentAmount || 0;
+        const dueAmount = Math.max(0, totalFee - paymentAmount);
+        
+        if (item.paymentStatus === 'Failed' || (item.transactionId && item.status === 'failed')) {
+          itemPaymentStatus = 'failed';
+        } else if (!item.transactionId || paymentAmount === 0) {
+          itemPaymentStatus = 'pending';
+        } else if (paymentAmount >= totalFee || dueAmount === 0) {
+          itemPaymentStatus = 'paid';
+        } else if (paymentAmount > 0 && paymentAmount < totalFee) {
+          itemPaymentStatus = 'paid-due';
+        }
+        
+        const paymentMatch = !paymentFilter || itemPaymentStatus === paymentFilter;
         
         return searchMatch && programMatch && paymentMatch;
       });
@@ -521,7 +824,7 @@
       tbody.innerHTML = '';
       
       if (filteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="17" style="text-align: center; padding: 20px;">No records found matching the filters</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="19" style="text-align: center; padding: 20px;">No records found matching the filters</td></tr>';
       } else {
         // Rebuild table with filtered data
         filteredData.forEach((item, index) => {
@@ -539,10 +842,28 @@
             }
           }
           
-          // Payment status
-          const paymentStatus = item.transactionId ? 
-            `<span class="paid">PAID</span>` : 
-            `<span class="pending">PENDING</span>`;
+          // Payment status - use same logic as main view
+          let paymentStatus;
+          const totalFee = item.totalFee || item.totalCourseFee || 0;
+          const paymentAmount = item.paymentAmount || 0;
+          const dueAmount = calculateDueAmount(item);
+          
+          if (item.paymentStatus === 'Failed' || (item.transactionId && item.status === 'failed')) {
+            // Payment explicitly failed
+            paymentStatus = `<span style="color: #dc3545; font-weight: bold;">FAILED</span>`;
+          } else if (!item.transactionId || paymentAmount === 0) {
+            // No payment made yet
+            paymentStatus = `<span class="pending">PENDING</span>`;
+          } else if (paymentAmount >= totalFee || dueAmount === 0) {
+            // Full payment made (100% payment)
+            paymentStatus = `<span class="paid">PAID</span>`;
+          } else if (paymentAmount > 0 && paymentAmount < totalFee) {
+            // Partial payment made (still has due amount)
+            paymentStatus = `<span style="color: #fd7e14; font-weight: bold;">PAID/DUE</span>`;
+          } else {
+            // Default fallback
+            paymentStatus = `<span class="pending">PENDING</span>`;
+          }
           
           // Documents list - same logic as main view
           const documents = [];
@@ -602,13 +923,15 @@
             <td>${item.dateOfBirth || 'N/A'}</td>
             <td>${item.permanentAddress || 'N/A'}</td>
             <td>${item.correspondenceAddress || 'N/A'}</td>
+            <td>₹${item.totalFee || item.totalCourseFee || 'N/A'}</td>
             <td>₹${item.paymentAmount || 'N/A'}</td>
-            <td>₹${item.totalFee || 'N/A'}</td>
+            <td>₹${calculateDueAmount(item)}</td>
             <td>${item.transactionId || 'N/A'}</td>
+            <td style="font-weight: bold; color: #003349;">${item.sinNumber || 'Not Generated'}</td>
             <td>${paymentStatus}</td>
             <td>${submissionDate}</td>
             <td>${documents.join(', ') || 'None'}</td>
-            <td class="actions-cell">${actionLinks || 'No files'}</td>
+            <td class="actions-cell">${actionLinks || 'No files'}<button class="delete-btn" onclick="deleteRegistration('${item.id || item.registrationId || ''}', '${(item.studentName || 'Unknown').replace(/'/g, "\\'")}')" title="Delete this registration">❌ Delete</button></td>
           `;
           
           tbody.appendChild(row);
@@ -628,6 +951,187 @@
       document.getElementById('programFilter').value = '';
       document.getElementById('paymentFilter').value = '';
       filterTable();
+    }
+    
+    // Function to delete a registration
+    async function deleteRegistration(registrationId, studentName) {
+      if (!confirm(`Are you sure you want to delete the registration for "${studentName}"?\n\nThis action cannot be undone!`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/admin/registrations/${registrationId}`, {
+          method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`✅ Registration for "${studentName}" has been deleted successfully.`);
+          // Reload data to reflect changes
+          await loadData();
+        } else {
+          alert(`❌ Failed to delete registration: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error deleting registration:', error);
+        alert(`❌ Error deleting registration: ${error.message}`);
+      }
+    }
+    
+    // Function to get filtered data for export
+    function getFilteredData() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+      const programFilter = document.getElementById('programFilter').value.toLowerCase();
+      const paymentFilter = document.getElementById('paymentFilter').value.toLowerCase();
+      
+      if (!window.originalRegistrations) {
+        return [];
+      }
+      
+      return window.originalRegistrations.filter(item => {
+        // Search filter - include SIN numbers in search
+        const searchMatch = !searchTerm || 
+          (item.studentName && item.studentName.toLowerCase().includes(searchTerm)) ||
+          (item.email && item.email.toLowerCase().includes(searchTerm)) ||
+          (item.phoneNumber && item.phoneNumber.toLowerCase().includes(searchTerm)) ||
+          (item.aadharNumber && item.aadharNumber.toLowerCase().includes(searchTerm)) ||
+          (item.transactionId && item.transactionId.toLowerCase().includes(searchTerm)) ||
+          (item.sinNumber && item.sinNumber.toLowerCase().includes(searchTerm));
+        
+        // Program filter
+        const programMatch = !programFilter || 
+          (item.program && item.program.toLowerCase() === programFilter);
+        
+        // Payment status filter
+        let itemPaymentStatus = 'pending';
+        const totalFee = item.totalFee || item.totalCourseFee || 0;
+        const paymentAmount = item.paymentAmount || 0;
+        const dueAmount = Math.max(0, totalFee - paymentAmount);
+        
+        if (item.paymentStatus === 'Failed' || (item.transactionId && item.status === 'failed')) {
+          itemPaymentStatus = 'failed';
+        } else if (!item.transactionId || paymentAmount === 0) {
+          itemPaymentStatus = 'pending';
+        } else if (paymentAmount >= totalFee || dueAmount === 0) {
+          itemPaymentStatus = 'paid';
+        } else if (paymentAmount > 0 && paymentAmount < totalFee) {
+          itemPaymentStatus = 'paid-due';
+        }
+        
+        const paymentMatch = !paymentFilter || itemPaymentStatus === paymentFilter;
+        
+        return searchMatch && programMatch && paymentMatch;
+      });
+    }
+    
+    // Function to export filtered data to Excel
+    function exportToExcel() {
+      const filteredData = getFilteredData();
+      
+      if (filteredData.length === 0) {
+        alert('No data to export. Please adjust your filters.');
+        return;
+      }
+      
+      // Create Excel-compatible CSV data
+      const headers = [
+        'S.No', 'Program', 'Course', 'Student Name', 'Email', 'Phone', 
+        'Aadhar Number', 'Date of Birth', 'Permanent Address', 
+        'Correspondence Address', 'Total Course Fee', 'Payment Amount', 
+        'Due Amount', 'Transaction ID', 'SIN Number', 'Payment Status', 
+        'Submission Date'
+      ];
+      
+      const csvContent = [headers.join(',')];
+      
+      filteredData.forEach((item, index) => {
+        // Format date
+        let submissionDate = 'N/A';
+        if (item.createdAt) {
+          if (item.createdAt.toDate) {
+            submissionDate = item.createdAt.toDate().toLocaleDateString();
+          } else if (item.createdAt._seconds) {
+            submissionDate = new Date(item.createdAt._seconds * 1000).toLocaleDateString();
+          } else {
+            submissionDate = new Date(item.createdAt).toLocaleDateString();
+          }
+        }
+        
+        // Calculate payment status
+        const totalFee = item.totalFee || item.totalCourseFee || 0;
+        const paymentAmount = item.paymentAmount || 0;
+        const dueAmount = Math.max(0, totalFee - paymentAmount);
+        
+        let paymentStatus = 'PENDING';
+        if (item.paymentStatus === 'Failed' || (item.transactionId && item.status === 'failed')) {
+          paymentStatus = 'FAILED';
+        } else if (!item.transactionId || paymentAmount === 0) {
+          paymentStatus = 'PENDING';
+        } else if (paymentAmount >= totalFee || dueAmount === 0) {
+          paymentStatus = 'PAID';
+        } else if (paymentAmount > 0 && paymentAmount < totalFee) {
+          paymentStatus = 'PAID/DUE';
+        }
+        
+        const row = [
+          index + 1,
+          `"${(item.program || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.course || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.studentName || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.email || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.phoneNumber || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.aadharNumber || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.dateOfBirth || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.permanentAddress || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.correspondenceAddress || 'N/A').replace(/"/g, '""')}"`,
+          `"₹${totalFee || 'N/A'}"`,
+          `"₹${paymentAmount || 'N/A'}"`,
+          `"₹${dueAmount || 'N/A'}"`,
+          `"${(item.transactionId || 'N/A').replace(/"/g, '""')}"`,
+          `"${(item.sinNumber || 'Not Generated').replace(/"/g, '""')}"`,
+          `"${paymentStatus}"`,
+          `"${submissionDate}"`
+        ];
+        
+        csvContent.push(row.join(','));
+      });
+      
+      // Create and download file
+      const csvString = csvContent.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      
+      // Generate filename with current filters
+      let filename = 'GMCP_Registrations';
+      
+      const activeFilters = [];
+      if (document.getElementById('programFilter').value) {
+        activeFilters.push(document.getElementById('programFilter').value.toUpperCase());
+      }
+      if (document.getElementById('paymentFilter').value) {
+        activeFilters.push(document.getElementById('paymentFilter').value.toUpperCase().replace('-', '_'));
+      }
+      if (document.getElementById('searchInput').value.trim()) {
+        activeFilters.push('FILTERED');
+      }
+      
+      if (activeFilters.length > 0) {
+        filename += '_' + activeFilters.join('_');
+      }
+      
+      filename += '_' + new Date().toISOString().split('T')[0] + '.csv';
+      
+      // Create download link
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Show success message
+      alert(`✅ Excel file exported successfully!\n\nFile: ${filename}\nRecords: ${filteredData.length}`);
     }
     
     // Initialize when page loads

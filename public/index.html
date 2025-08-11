@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registration Form - GMCP</title>
+  <title>Provisional Admission Form - GMCP</title>
    
   <link rel="stylesheet" href="form.css">
 
@@ -15,18 +15,18 @@
 
   <div class="header">
     <img src="Logo.jpg" alt="GMCP Logo">
-    <h1>GANGA MEMORIAL COLLEGE OF POLYTECHNIC</h1>
-    <p>HARNAUT, NALANDA</p>
+    <h1>GANGA MEMORIAL POLYTECHNIC/ITI/BCA</h1>
+    <p>NH-20, Ganga Nagar, Harnaut, Nalanda</p>
     <p style="color: red;">Approved by AICTE, HRD, Govt. of India Affiliated to SBTE, Patna</p>
     <p>Email: admission@gmcpnalanda.com | Contact: +91-9473000022, 8002864770</p>
   </div>
 
   <div class="form-container">
-    <h2>Registration Form</h2>
+    <h2>Provisional Admission Form</h2>
     <form id="registrationForm">
       <div class="form-group">
         <label>*Select Program:</label>
-        <select id="program" name="program" required onchange="updateCourses()">
+        <select id="program" name="program" required onchange="updateCourses(); updateCourseFee();">
           <option value="">--Select--</option>
           <option value="polytechnic">Polytechnic</option>
           <option value="ug">UG</option>
@@ -59,7 +59,8 @@
 
       <div class="form-group">
         <label>*Aadhar Number:</label>
-        <input type="text" name="aadharNumber" required placeholder="Enter Aadhar number">
+        <input type="text" name="aadharNumber" required placeholder="Enter 12-digit Aadhar number" maxlength="12" pattern="[0-9]{12}" title="Please enter exactly 12 digits" oninput="validateAadhar(this)">
+        <small style="color: red; display: none;" id="aadharError">Please enter exactly 12 digits</small>
       </div>
 
       <div class="form-group">
@@ -108,19 +109,32 @@
       </div>
 
       <div class="form-group">
-        <label>*Payment Amount (Admission Fee):</label>
-        <input type="text" name="paymentAmount" required placeholder="Enter Amount">
+        <label>*Total Fee Amount:</label>
+        <input type="text" id="totalCourseFee" name="totalCourseFee" readonly style="background-color: #f0f0f0;">
       </div>
 
-      <div class="full-width">
-        <label>*Total Fee (including Tax):</label>
-        <input type="text" name="totalFee" required>
+      <div class="form-group">
+        <label>*Payment Amount (Minimum ₹1,000):</label>
+        <input type="number" id="paymentAmount" name="paymentAmount" required placeholder="Enter Amount" min="1000" step="1">
+        <small style="color: red; display: none;" id="paymentError">Payment amount must be at least ₹1,000</small>
+      </div>
+
+      <div class="form-group">
+        <label>*Due Amount:</label>
+        <input type="text" id="dueAmount" name="dueAmount" readonly style="background-color: #f0f0f0;">
       </div>
 
       <div class="submit-button full-width">
         <button type="submit">Submit & Pay</button>
       </div>
     </form>
+  </div>
+  
+  <!-- Powered by section -->
+  <div class="footer">
+    <p style="text-align: center; margin: 20px 0; color: #666; font-size: 14px;">
+      Powered by <strong>Ganga Memorial Educational and Development Society</strong>
+    </p>
   </div>
   <!-- Firebase SDK removed - All Firebase operations now handled by backend for security -->
   <script>
